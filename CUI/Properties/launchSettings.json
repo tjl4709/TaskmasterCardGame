@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CUI": {
+      "commandName": "Project",
+      "commandLineArgs": "../../../../CardData/prize_tasks.tsv ../../../../CardData/secret_tasks.tsv ../../../../CardData/tasks.tsv ../../../../CardData/restrictions.tsv ../../../../CardData/final_tasks.tsv jared hannah tj ashley cassie"
+    }
+  }
+}
