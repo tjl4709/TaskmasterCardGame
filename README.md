@@ -15,6 +15,32 @@ Each round, the Taskmaster will draw a Task card which will detail the task each
 ## Final Tasks:
 These are meant to be similar to the final, live tasks of each show. All the contestants will perform the Final Task at the same time. These will be formatted the same as the Task cards with Materials, Action, and Criteria, and can also have Restriction cards applied to them. It is recommended to perform a Final Task as the last round of the game.
 
+# Card Formats
+Each deck has a Tab-Separated Value file (.tsv) containing all its cards. Each card is on a separate line; blank lines are ignored. For cards with multiple fields, each field is separated by tabs on the same line. The fields for each deck are listed below.
+
+Cards can be customized each time they're drawn by using double angle brackets around a description of what to customize. Formatter types can also be used to control what kind of input to accept for the customization by adding a colon and type character after the description in the double angle brackets. By default, it expects a phrase for the customization. See below for the different formatter types and examples.
+Character | Type
+----------|-----
+i | Integer/Whole Number
+d | Decimal/Floating Point Number
+l | Letter
+w | Word
+p | Phrase
+
+Examples:
+- Say \<\<enter a phrase or word>> before starting the task
+- Perform \<\<enter a number:i>> jumping jacks
+- You may only saw words starting with the letter \<\<enter a letter:l>>
+
+## Prize Tasks and Restrictions
+The cards in the Prize Task and Restriction decks only contain a single field describing the prize or restriction. Only the first field of each line is used, if there are additional fields, they are ignored. Each card is on a separate line.
+
+## Secret Tasks
+The cards in the Secret Task deck contain two fields in the following order: the description of secret task, and the number of points the task is worth. Exactly two fields are required, any more or less will not be accepted. The fields are separated by a tab character and each card is on a separate line.
+
+## Tasks and Final Tasks
+The cards in the Final Task deck contain three fields in the following order: the materials and setup required for the task, the task the contestants should perform, and the criteria used to judge the task. Exactly three fields are required. The Task deck contains the same three fields in the same order and an optional fourth field to mark it as a team task. If this field is included, it must have the value "Team". The fields are separated by tabs and each card is on a separate line.
+
 
 # Version 0.1
 Version 0.1 is the Minimal Viable Product (MVP). It has only a CUI with limited functionalty.
