@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Backend;
 
 namespace CUI
@@ -62,11 +63,15 @@ namespace CUI
             }
 
             // display entire game
-            Console.Clear();
+            try {
+                Console.Clear();
+            } catch (IOException) {
+                Console.WriteLine("\n\n\n\n\n\n\n\n\n");  // prints 10 blank lines
+            }
             Console.WriteLine(game.ToString());
             // keep console open so user can read
-            Console.Write("Press any key to continue...");
-            Console.ReadKey();
+            Console.Write("Press the enter key to exit...");
+            Console.ReadLine();
         }
     }
 }
