@@ -19,19 +19,21 @@ namespace Backend
 
         public virtual string Format(string rawText)
         {
-            int closing_index = 0, opening_index;
+            int opening_index, closing_index = -2;  // so we don't need special logic for start of string
             string formattedText = "", formatString;
             FormatTypes formatType;
-            rawText = CLOSING + rawText;  // so we don't need special logic for start of string
+
             while ((opening_index = rawText.IndexOf(OPENING, closing_index)) != -1) {
                 formattedText += rawText.Substring(closing_index + 2, opening_index - closing_index - 2);
                 closing_index = rawText.IndexOf(CLOSING, opening_index);
                 if (closing_index == -1)
                     throw new FormatException($"Formatter string at character {opening_index} was not closed.");
+                
                 formatString = rawText.Substring(opening_index + 2, closing_index - opening_index - 2);
                 formatType = Parse(ref formatString);
                 formattedText += Prompt(formatString, formatType);
             }
+
             return formattedText + rawText.Substring(closing_index + 2);
         }
 

@@ -1,77 +1,73 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Backend
 {
-    public class Database
+    public class IDatabase
     {
         #region ----- Datamembers -----
         // lists of cards for the active game
         protected List<SimpleCard> m_prizeTasks, m_restrictions;
         protected List<ScoredCard> m_secretTasks;
         protected List<TaskCard> m_tasks, m_finalTasks;
-        public IReadOnlyList<SimpleCard> PrizeTasks { get { return m_prizeTasks.AsReadOnly(); } }
-        public IReadOnlyList<ScoredCard> SecretTasks { get { return m_secretTasks.AsReadOnly(); } }
-        public IReadOnlyList<TaskCard> Tasks { get { return m_tasks.AsReadOnly(); } }
-        public IReadOnlyList<SimpleCard> Restrictions { get { return m_restrictions.AsReadOnly(); } }
-        public IReadOnlyList<TaskCard> FinalTasks { get { return m_finalTasks.AsReadOnly(); } }
+        public IReadOnlyList<SimpleCard> PrizeTasks => m_prizeTasks.AsReadOnly();
+        public IReadOnlyList<ScoredCard> SecretTasks => m_secretTasks.AsReadOnly();
+        public IReadOnlyList<TaskCard> Tasks => m_tasks.AsReadOnly();
+        public IReadOnlyList<SimpleCard> Restrictions => m_restrictions.AsReadOnly();
+        public IReadOnlyList<TaskCard> FinalTasks => m_finalTasks.AsReadOnly();
         
         // lists of all loaded cards
-        protected CardParser<SimpleCard> m_loadedPrizeTasks, m_loadedRestrictions;
-        protected CardParser<ScoredCard> m_loadedSecretTasks;
-        protected CardParser<TaskCard> m_loadedTasks, m_loadedFinalTasks;
-        public IReadOnlyList<SimpleCard> LoadedPrizeTasks { get { return m_loadedPrizeTasks.Cards; } }
-        public IReadOnlyList<ScoredCard> LoadedSecretTasks { get { return m_loadedSecretTasks.Cards; } }
-        public IReadOnlyList<TaskCard> LoadedTasks { get { return m_loadedTasks.Cards; } }
-        public IReadOnlyList<SimpleCard> LoadedRestrictions { get { return m_loadedRestrictions.Cards; } }
-        public IReadOnlyList<TaskCard> LoadedFinalTasks { get { return m_loadedFinalTasks.Cards; } }
-
-        // file paths
-        public string PrizeTaskFilePath { get; protected set; }
-        public string SecretTaskFilePath { get; protected set; }
-        public string TaskFilePath { get; protected set; }
-        public string RestrictionFilePath { get; protected set; }
-        public string FinalTaskFilePath { get; protected set; }
+        protected List<SimpleCard> m_loadedPrizeTasks, m_loadedRestrictions;
+        protected List<ScoredCard> m_loadedSecretTasks;
+        protected List<TaskCard> m_loadedTasks, m_loadedFinalTasks;
+        public IReadOnlyList<SimpleCard> LoadedPrizeTasks => m_loadedPrizeTasks.AsReadOnly();
+        public IReadOnlyList<ScoredCard> LoadedSecretTasks => m_loadedSecretTasks.AsReadOnly();
+        public IReadOnlyList<TaskCard> LoadedTasks => m_loadedTasks.AsReadOnly();
+        public IReadOnlyList<SimpleCard> LoadedRestrictions => m_loadedRestrictions.AsReadOnly();
+        public IReadOnlyList<TaskCard> LoadedFinalTasks => m_loadedFinalTasks.AsReadOnly();
 
         protected Random m_rand;
         protected ICardFormatter m_formatter;
         #endregion Datamembers
 
-        public Database(string prizeTaskFile, string secretTaskFile, string taskFile,
-            string restrictionFile, string finalTaskFile, ICardFormatter formatter)
+
+        protected IDatabase(ICardFormatter formatter)
         {
             m_rand = new Random();
             m_formatter = formatter;
+        }
 
-            PrizeTaskFilePath  = prizeTaskFile;
-            m_loadedPrizeTasks = new CardParser<SimpleCard>(prizeTaskFile);
-            m_prizeTasks       = m_loadedPrizeTasks.Parse();
-            
-            SecretTaskFilePath  = secretTaskFile;
-            m_loadedSecretTasks = new CardParser<ScoredCard>(secretTaskFile);
-            m_secretTasks       = m_loadedSecretTasks.Parse();
-            
-            TaskFilePath  = taskFile;
-            m_loadedTasks = new CardParser<TaskCard>(taskFile);
-            m_tasks       = m_loadedTasks.Parse();
-            
-            RestrictionFilePath  = restrictionFile;
-            m_loadedRestrictions = new CardParser<SimpleCard>(restrictionFile);
-            m_restrictions       = m_loadedRestrictions.Parse();
-            
-            FinalTaskFilePath  = finalTaskFile;
-            m_loadedFinalTasks = new CardParser<TaskCard>(finalTaskFile);
-            m_finalTasks       = m_loadedFinalTasks.Parse();
+        protected void Initialize(List<SimpleCard> prizeTasks, List<ScoredCard> secretTasks,
+            List<TaskCard> tasks, List<SimpleCard> restrictions, List<TaskCard> finalTasks)
+        {
+            // set loaded lists
+            m_loadedPrizeTasks = prizeTasks;
+            m_loadedSecretTasks = secretTasks;
+            m_loadedTasks = tasks;
+            m_loadedRestrictions = restrictions;
+            m_loadedFinalTasks = finalTasks;
+            // set lists to pull from
+            m_prizeTasks   = new List<SimpleCard>(m_loadedPrizeTasks);
+            m_secretTasks  = new List<ScoredCard>(m_loadedSecretTasks);
+            m_tasks        = new List<TaskCard>(m_loadedTasks);
+            m_restrictions = new List<SimpleCard>(m_loadedRestrictions);
+            m_finalTasks   = new List<TaskCard>(m_loadedFinalTasks);
         }
 
         public void ResetDecks()
         {
-            m_prizeTasks   = new List<SimpleCard>(m_loadedPrizeTasks.Cards);
-            m_secretTasks  = new List<ScoredCard>(m_loadedSecretTasks.Cards);
-            m_tasks        = new List<TaskCard>(m_loadedTasks.Cards);
-            m_restrictions = new List<SimpleCard>(m_loadedRestrictions.Cards);
-            m_finalTasks   = new List<TaskCard>(m_loadedFinalTasks.Cards);
+            // clear active lists
+            m_prizeTasks.Clear();
+            m_secretTasks.Clear();
+            m_tasks.Clear();
+            m_restrictions.Clear();
+            m_finalTasks.Clear();
+            // refill from loaded lists
+            m_prizeTasks.AddRange(m_loadedPrizeTasks);
+            m_secretTasks.AddRange(m_loadedSecretTasks);
+            m_tasks.AddRange(m_loadedTasks);
+            m_restrictions.AddRange(m_loadedRestrictions);
+            m_finalTasks.AddRange(m_loadedFinalTasks);
         }
 
         #region ----- Draw  Cards -----
