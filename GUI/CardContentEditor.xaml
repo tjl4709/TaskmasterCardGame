@@ -1,0 +1,19 @@
+﻿<UserControl x:Class="GUI.CardContentEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:GUI"
+             mc:Ignorable="d" 
+             d:DesignHeight="50" d:DesignWidth="200">
+  <UserControl.Foreground>
+    <SolidColorBrush Color="Black"/>
+  </UserControl.Foreground>
+  <UserControl.BorderBrush>
+    <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlTextColorKey}}"/>
+  </UserControl.BorderBrush>
+  <UserControl.Background>
+    <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
+  </UserControl.Background>
+  <WrapPanel x:Name="CardContentWrapPanel" Cursor="IBeam"/>
+</UserControl>

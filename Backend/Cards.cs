@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace Backend
@@ -16,9 +17,9 @@ namespace Backend
 
     public class CardMetaData
     {
-        public int ID;
-        public DateTime Created;
-        public DateTime LastModified;
+        public int ID { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime LastModified { get; set; }
         public CardType CardType;
 
         public CardMetaData(int id, DateTime created, DateTime modified, CardType cardType = CardType.Unknown)
@@ -57,8 +58,9 @@ namespace Backend
 
     public abstract class ICard
     {
-        public CardMetaData MetaData;
+        public CardMetaData MetaData { get; set; }
         protected string[] m_rawData;
+
 
         public static T Create<T>(string[] rawData, CardMetaData metaData = null) where T : ICard, new()
         {
@@ -78,8 +80,9 @@ namespace Backend
 
         public void Assign(string[] data)
         {
-            if (VerifyRawData(data))
+            if (VerifyRawData(data)) {
                 m_rawData = data;
+            }
         }
 
         protected abstract bool VerifyRawData(string[] data);
@@ -96,8 +99,16 @@ namespace Backend
             if (!obj.GetType().Equals(GetType()))
                 return false;
             var card = obj as ICard;
+            // if both cards have meta data, they are the same if their IDs match
             if (MetaData != null && card.MetaData != null)
                 return MetaData.ID == card.MetaData.ID;
+            // other wise, compare the raw data: if they're both null, then they match,
+            // if only one is null, they don't match, otherwise compare the arrays
+            if (m_rawData == null)
+                return card.m_rawData == null;
+            if (card.m_rawData == null)  // m_rawData is not null but card.m_rawData is
+                return false;
+            // compare raw data values
             return m_rawData.SequenceEqual(card.m_rawData);
         }
 
@@ -110,13 +121,15 @@ namespace Backend
     // Prize Tasks, and Restrictions
     public class SimpleCard : ICard
     {
-        public string Descripton { get; protected set; }
+        protected int m_DESCRIPTION_INDEX = 0;
+        public string Description { get; protected set; }
+        public string RawDescription { get { return m_rawData == null ? "" : m_rawData[m_DESCRIPTION_INDEX]; } }
 
         public override void Copy(ICard original)
         {
             base.Copy(original);
             if (original is SimpleCard originalCard) {
-                Descripton = originalCard.Descripton;
+                Description = originalCard.Description;
             }
         }
 
@@ -127,19 +140,21 @@ namespace Backend
 
         public override void Format(ICardFormatter formatter)
         {
-            Descripton = formatter.Format(m_rawData[0]);
+            Description = formatter.Format(RawDescription);
         }
 
         public override string ToString()
         {
-            return Descripton;
+            return Description;
         }
     }
 
     // Secret Tasks
     public class ScoredCard : SimpleCard
     {
+        protected int m_SCORE_INDEX = 1;
         public int Score { get; protected set; }
+        public string RawScore { get { return m_rawData == null ? "" : m_rawData[m_SCORE_INDEX]; } }
         
         protected override bool VerifyRawData(string[] data)
         {
@@ -150,8 +165,8 @@ namespace Backend
 
         public override void Format(ICardFormatter formatter)
         {
-            Descripton = formatter.Format(m_rawData[0]);
-            Score = int.Parse(formatter.Format(m_rawData[1]));  // can throw exception
+            Description = formatter.Format(RawDescription);
+            Score = int.Parse(formatter.Format(RawScore));  // can throw exception
         }
         
         public override void Copy(ICard original)
@@ -172,12 +187,25 @@ namespace Backend
     public class TaskCard : SimpleCard
     {
         public const string TEAM_MARK = "team";
+        protected int m_MATERIALS_INDEX = 0,
+            m_CRITERIA_INDEX = 2,
+            m_IS_TEAM_TASK_INDEX = 3;
 
         public string Materials { get; protected set; }
+        public string RawMaterials { get { return m_rawData == null ? "" : m_rawData[m_MATERIALS_INDEX]; } }
         public string Criteria { get; protected set; }
-        public List<SimpleCard> Restrictions = new List<SimpleCard>();
+        public string RawCriteria { get { return m_rawData == null ? "" : m_rawData[m_CRITERIA_INDEX]; } }
+        public List<SimpleCard> Restrictions;
         public bool IsTeamTask { get; protected set; }
+        public string RawIsTeamTask { get { return m_rawData == null ? "" : m_rawData[m_IS_TEAM_TASK_INDEX]; } }
         
+
+        public TaskCard()
+        {
+            m_DESCRIPTION_INDEX = 1;
+            Restrictions = new List<SimpleCard>();
+        }
+
         protected override bool VerifyRawData(string[] data)
         {
             if (data.Length != 3 && data.Length != 4)
@@ -190,7 +218,7 @@ namespace Backend
         public override void Format(ICardFormatter formatter)
         {
             Materials = formatter.Format(m_rawData[0]);
-            Descripton = formatter.Format(m_rawData[1]);
+            Description = formatter.Format(m_rawData[1]);
             Criteria = formatter.Format(m_rawData[2]);
             IsTeamTask = m_rawData.Length == 4;
         }
@@ -209,11 +237,11 @@ namespace Backend
         public override string ToString()
         {
             string text = IsTeamTask ? "* Team Task *\n" : "";
-            text += $"Materials: {Materials}\n{Descripton}\n";
+            text += $"Materials: {Materials}\n{Description}\n";
             if (Restrictions.Count > 0) {
                 text += "Restrictions:\n";
                 foreach (SimpleCard restriction in Restrictions)
-                    text += $" - {restriction.Descripton}\n";
+                    text += $" - {restriction.Description}\n";
             }
             text += Criteria;
             return text;

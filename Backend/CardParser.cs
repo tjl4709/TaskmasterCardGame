@@ -19,10 +19,11 @@ namespace Backend
 
         public virtual string Format(string rawText)
         {
-            int opening_index, closing_index = -2;  // so we don't need special logic for start of string
+            int opening_index, closing_index = 0;
             string formattedText = "", formatString;
             FormatTypes formatType;
 
+            rawText = "  " + rawText;  // so we don't need special logic for start of string
             while ((opening_index = rawText.IndexOf(OPENING, closing_index)) != -1) {
                 formattedText += rawText.Substring(closing_index + 2, opening_index - closing_index - 2);
                 closing_index = rawText.IndexOf(CLOSING, opening_index);
@@ -69,7 +70,7 @@ namespace Backend
             return type;
         }
 
-        protected bool Verify(string value, FormatTypes type)
+        public bool Verify(string value, FormatTypes type)
         {
             switch (type) {
                 case FormatTypes.WholeNumber:

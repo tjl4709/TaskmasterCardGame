@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Backend;
 using Microsoft.Data.Sqlite;
 
-namespace GUI
+namespace Backend
 {
-    class SqlDatabase : IDatabase
+    public class SqlDatabase : IDatabase
     {
         #region --------------- Data Members ---------------
         protected struct ColumnData
@@ -123,6 +122,7 @@ namespace GUI
             m_finalTasks   = new List<TaskCard>();
 
             // open database (if it did not exist, a new one will be created)
+            SQLitePCL.Batteries.Init();
             m_connection = new SqliteConnection($"Data Source={filePath}");
             m_connection.Open();
             // Verify all required tables have the required columns
@@ -133,7 +133,13 @@ namespace GUI
 
         ~SqlDatabase()
         {
-            m_connection.Close();
+            try {
+                if (m_connection.State == System.Data.ConnectionState.Open && m_connection.Handle != null
+                    && !m_connection.Handle.IsClosed && !m_connection.Handle.IsInvalid)
+                    m_connection.Close();
+            } catch (Exception e) {
+                Console.WriteLine($"Error while closing connection to \"{m_connection.DataSource}\": {e}");
+            }
         }
 
         // initialization functions
@@ -141,7 +147,7 @@ namespace GUI
         protected void CheckTables()
         {
             // retrieve current tables
-            var tableQueryCommand = new SqliteCommand("SELECT name, sql FROM slite_schema WHERE type='table';", m_connection);
+            var tableQueryCommand = new SqliteCommand("SELECT name, sql FROM sqlite_schema WHERE type='table';", m_connection);
             var reader = tableQueryCommand.ExecuteReader();
             var currentTables = new Dictionary<string, string>();
             if (reader.HasRows) {
@@ -167,8 +173,8 @@ namespace GUI
 
                 if (!found) {
                     // the table was not found, so create it
-                    var createTableCommand = new SqliteCommand("@command;", m_connection);
-                    createTableCommand.Parameters.AddWithValue("@command", requiredTable.ToString());
+                    var createTableCommand = m_connection.CreateCommand();
+                    createTableCommand.CommandText = requiredTable.ToString();
                     createTableCommand.ExecuteNonQuery();
                 } else if (!matches) {
                     // the table was found, but not all the columns matched
@@ -190,18 +196,14 @@ namespace GUI
 
                         if (!found || !matches) {
                             // setup command to add missing or mismatched column
-                            var columnCommand = new SqliteCommand("ALTER TABLE @table ADD COLUMN @column;", m_connection);
+                            var columnCommand = new SqliteCommand($"ALTER TABLE {requiredTable.Name} ADD COLUMN {requiredCol};", m_connection);
                             if (found && !matches) {
                                 // the column was found, but it doesn't have the right type,
                                 // so rename the old column before adding the new one
-                                columnCommand.CommandText = "ALTER TABLE @table RENAME COLUMN @oldColName TO @newColName;"
+                                columnCommand.CommandText = $"ALTER TABLE {requiredTable.Name} RENAME COLUMN {requiredCol.Name} TO _{requiredCol.Name};"
                                     + columnCommand.CommandText;
-                                columnCommand.Parameters.AddWithValue("@oldColName", requiredCol.Name);
-                                columnCommand.Parameters.AddWithValue("@newColName", "_" + requiredCol.Name);
                             }
                             // fill in last parameters and execute command
-                            columnCommand.Parameters.AddWithValue("@table", requiredTable);
-                            columnCommand.Parameters.AddWithValue("@column", requiredCol);
                             columnCommand.ExecuteNonQuery();
                         }
                     }   // end checking for required columns
@@ -221,8 +223,7 @@ namespace GUI
         protected void ReadCardTable(CardType cardType)
         {
             // read all the data from the given table
-            var readCardsCommand = new SqliteCommand("Select * from @table;", m_connection);
-            readCardsCommand.Parameters.AddWithValue("@table", m_TABLES[cardType].Name);
+            var readCardsCommand = new SqliteCommand($"Select * from {m_TABLES[cardType].Name};", m_connection);
             var reader = readCardsCommand.ExecuteReader();
             
             // clear relevant list
@@ -299,11 +300,12 @@ namespace GUI
                 card.MetaData.LastModified = now;
 
             // create insert command with common data
-            var insertCommand = new SqliteCommand("INSERT INTO @table VALUES (@created, @last_modified, '@description'", m_connection);
-            insertCommand.Parameters.AddWithValue("@table", m_TABLES[card.MetaData.CardType].Name);
+            TableData table = m_TABLES[card.MetaData.CardType];
+            string insertColumns = string.Join(", ", table.Columns.Skip(1).Select(col => col.Name));
+            var insertCommand = new SqliteCommand($"INSERT INTO {table.Name} ({insertColumns}) VALUES (@created, @last_modified, '@description'", m_connection);
             insertCommand.Parameters.AddWithValue("@created", card.MetaData.Created.ToBinary());
             insertCommand.Parameters.AddWithValue("@last_modified", card.MetaData.LastModified.ToBinary());
-            insertCommand.Parameters.AddWithValue("@description", card.Descripton);
+            insertCommand.Parameters.AddWithValue("@description", card.Description);
 
             // handle specifics based on type of card
             switch (card.MetaData.CardType) {
@@ -347,10 +349,9 @@ namespace GUI
             if (card.MetaData.LastModified == DateTime.FromBinary(0))
                 card.MetaData.LastModified = DateTime.Now;
 
-            var command = new SqliteCommand("UPDATE @table SET last_modified = @modified, description = '@description'", m_connection);
-            command.Parameters.AddWithValue("@table", m_TABLES[card.MetaData.CardType].Name);
+            var command = new SqliteCommand($"UPDATE {m_TABLES[card.MetaData.CardType].Name} SET last_modified = @modified, description = '@description'", m_connection);
             command.Parameters.AddWithValue("@modified", card.MetaData.LastModified.ToBinary());
-            command.Parameters.AddWithValue("@description", card.Descripton);
+            command.Parameters.AddWithValue("@description", card.Description);
 
             switch (card.MetaData.CardType) {
                 case CardType.PrizeTask:
@@ -388,8 +389,7 @@ namespace GUI
                 return false;
 
             // remove card from database
-            var commamd = new SqliteCommand("DELETE FROM @table WHERE id = @id;", m_connection);
-            commamd.Parameters.AddWithValue("@table", m_TABLES[card.MetaData.CardType].Name);
+            var commamd = new SqliteCommand($"DELETE FROM {m_TABLES[card.MetaData.CardType].Name} WHERE id = @id;", m_connection);
             commamd.Parameters.AddWithValue("@id", card.MetaData.ID);
             bool success = commamd.ExecuteNonQuery() == 1;
             
@@ -406,23 +406,26 @@ namespace GUI
                 taskFile, restrictionFile, finalTaskFile, m_formatter);
             SqliteTransaction transaction = m_connection.BeginTransaction();
             bool success = true;
+            CardMetaData metaData;
 
             // prize tasks
-            var metaData = new CardMetaData(
-                File.GetCreationTime(prizeTaskFile),
-                File.GetLastWriteTime(prizeTaskFile),
-                CardType.PrizeTask
-            );
-            foreach (SimpleCard card in textDatabase.LoadedPrizeTasks) {
-                card.MetaData = metaData.Duplicate();
-                if (!AddCard(card, false)) {
-                    success = false;
-                    break;
+            if (textDatabase.LoadedPrizeTasks.Count > 0) {
+                metaData = new CardMetaData(
+                    File.GetCreationTime(prizeTaskFile),
+                    File.GetLastWriteTime(prizeTaskFile),
+                    CardType.PrizeTask
+                );
+                foreach (SimpleCard card in textDatabase.LoadedPrizeTasks) {
+                    card.MetaData = metaData.Duplicate();
+                    if (!AddCard(card, false)) {
+                        success = false;
+                        break;
+                    }
                 }
             }
 
             // secret tasks
-            if (success) {
+            if (success && textDatabase.LoadedSecretTasks.Count > 0) {
                 metaData = new CardMetaData(
                     File.GetCreationTime(secretTaskFile),
                     File.GetLastWriteTime(secretTaskFile),
@@ -438,7 +441,7 @@ namespace GUI
             }
             
             // tasks
-            if (success) {
+            if (success && textDatabase.LoadedTasks.Count > 0) {
                 metaData = new CardMetaData(
                     File.GetCreationTime(taskFile),
                     File.GetLastWriteTime(taskFile),
@@ -454,7 +457,7 @@ namespace GUI
             }
             
             // restrictions
-            if (success) {
+            if (success && textDatabase.LoadedRestrictions.Count > 0) {
                 metaData = new CardMetaData(
                     File.GetCreationTime(restrictionFile),
                     File.GetLastWriteTime(restrictionFile),
@@ -470,7 +473,7 @@ namespace GUI
             }
 
             // final tasks
-            if (success) {
+            if (success && textDatabase.LoadedFinalTasks.Count > 0) {
                 metaData = new CardMetaData(
                     File.GetCreationTime(finalTaskFile),
                     File.GetLastWriteTime(finalTaskFile),
