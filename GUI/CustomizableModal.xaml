@@ -1,0 +1,31 @@
+﻿<Window x:Class="GUI.CustomizableModal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GUI"
+        mc:Ignorable="d"
+        Title="Create Customizable" Height="131.867" Width="360">
+  <Grid Margin="4">
+    <Grid.RowDefinitions>
+      <RowDefinition x:Name="DescriptionRow"/>
+      <RowDefinition x:Name="SpacingRow1" Height="3"/>
+      <RowDefinition x:Name="InputTypeRow" Height="Auto"/>
+      <RowDefinition x:Name="SpacingRow2" Height="3"/>
+      <RowDefinition x:Name="ButtonRow" Height="Auto"/>
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition x:Name="LabelColumn" Width="Auto"/>
+      <ColumnDefinition x:Name="SpacingColumn" Width="3"/>
+      <ColumnDefinition x:Name="InputColumn"/>
+    </Grid.ColumnDefinitions>
+
+    <Label x:Name="DescriptionLabel" Content="Description:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="InputTypeLabel" Content="Input Type:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <TextBox x:Name="DescriptionText" Grid.Row="0" Grid.Column="2" MinLines="2" TextWrapping="Wrap"/>
+    <ComboBox x:Name="InputTypeCombo" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center"/>
+
+    <Button x:Name="CancelButton" Content="Cancel" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Width="50" Margin="2,0,0,0" Click="CancelButton_Click"/>
+    <Button x:Name="InsertButton" Content="Insert" Grid.Row="5" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Width="50" Margin="0,0,2,0" Click="InsertButton_Click"/>
+  </Grid>
+</Window>

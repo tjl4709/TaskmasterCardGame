@@ -20,8 +20,6 @@ namespace GUI
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnDatabaseChanged() { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Database")); }
 
-        protected CardModal m_cardEditor;
-
         protected DataGrid ActiveTable {
             get {
                 switch (TableTabControl.SelectedIndex) {
@@ -44,13 +42,11 @@ namespace GUI
         public CardDatabasePage()
         {
             InitializeComponent();
-            m_cardEditor = new CardModal();
-            m_cardEditor.Hide();
         }
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)
         {
-            m_cardEditor.CreateNewCard((CardType)(TableTabControl.SelectedIndex + 1));
+            CardModal.CreateNewCard((CardType)(TableTabControl.SelectedIndex + 1));
         }
 
         private void EditCardButton_Click(object sender, RoutedEventArgs e)

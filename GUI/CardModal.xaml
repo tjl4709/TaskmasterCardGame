@@ -6,39 +6,46 @@
         xmlns:local="clr-namespace:GUI"
         mc:Ignorable="d"
         Title="Card Editor" Height="382" Width="626">
-  <Grid>
+  <Grid Margin="4">
     <Grid.RowDefinitions>
       <RowDefinition x:Name="IdRow" Height="1*"/>
       <RowDefinition x:Name="CreatedRow" Height="1*"/>
       <RowDefinition x:Name="LastModifiedRow" Height="1*"/>
       <RowDefinition x:Name="CardTypeRow" Height="1*"/>
       <RowDefinition x:Name="DescriptionRow" Height="3*"/>
-      <RowDefinition x:Name="TypePanelRow" Height="6*"/>
+      <RowDefinition x:Name="MaterialOrScoreRow" Height="3*"/>
+      <RowDefinition x:Name="CriteriaRow" Height="3*"/>
+      <RowDefinition x:Name="IsTeamTaskRow" Height="1*"/>
       <RowDefinition x:Name="ButtonRow" Height="1*"/>
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition x:Name="LabelColumn" Width="Auto"/>
+      <ColumnDefinition x:Name="PaddingColumn" Width="3"/>
       <ColumnDefinition x:Name="ContentColumn"/>
     </Grid.ColumnDefinitions>
 
-    <Label x:Name="IdLabel" Content="ID:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-    <Label x:Name="CreatedLabel" Content="Date Created:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
-    <Label x:Name="LastModifiedLabel" Content="Date Last Modified:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
-    <Label x:Name="CardTypeLabel" Content="Card Type:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
-    <Label x:Name="DescriptionLabel" Content="Description:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
+    <Label x:Name="IdLabel" Content="ID:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="CreatedLabel" Content="Date Created:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="LastModifiedLabel" Content="Date Last Modified:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="CardTypeLabel" Content="Card Type:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="DescriptionLabel" Content="Description:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="MaterialLabel" Content="Materials:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="ScoreLabel" Content="Score:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Top" Padding="0" Margin="0,3,0,0"/>
+    <Label x:Name="CriteriaLabel" Content="Criteria:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
+    <Label x:Name="IsTeamTaskLabel" Content="Is Team Task:" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Padding="0"/>
 
-    <TextBox x:Name="IdText" Text="0" IsReadOnly="True" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,4,0"/>
-    <TextBox x:Name="CreatedText" Text="YYYY-MM-DD hh:mm:ss.fff" IsReadOnly="True" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,4,0"/>
-    <TextBox x:Name="LastModifiedText" Text="YYYY-MM-DD hh:mm:ss.fff" IsReadOnly="True" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,4,0"/>
-    <TextBox x:Name="CardTypeText" Text="Task" IsReadOnly="True" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,4,0"/>
-    <local:CardContentEditor x:Name="DescriptionText" Text="" Grid.Row="4" Grid.Column="1" Margin="0,3,4,3"/>
+    <TextBox x:Name="IdText" Text="0" IsReadOnly="True" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Margin="0" Background="LightGray" GotFocus="Control_GotFocus"/>
+    <TextBox x:Name="CreatedText" Text="YYYY-MM-DD hh:mm:ss.fff" IsReadOnly="True" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Margin="0" Background="LightGray" GotFocus="Control_GotFocus"/>
+    <TextBox x:Name="LastModifiedText" Text="YYYY-MM-DD hh:mm:ss.fff" IsReadOnly="True" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" Margin="0" Background="LightGray" GotFocus="Control_GotFocus"/>
+    <TextBox x:Name="CardTypeText" Text="Task" IsReadOnly="True" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="0" Background="LightGray" GotFocus="Control_GotFocus"/>
+    <local:CardContentEditor x:Name="DescriptionText" Text="" Grid.Row="4" Grid.Column="2" Margin="0,3,0,3" IsEnabled="True" GotFocus="Control_GotFocus"/>
+    <local:CardContentEditor x:Name="MaterialText" Text="" Grid.Row="5" Grid.Column="2" Margin="0,3,0,3" IsEnabled="True" GotFocus="Control_GotFocus"/>
+    <TextBox x:Name="ScoreText" Text="5" Grid.Row="5" Grid.Column="2" VerticalAlignment="Top" Margin="0,3,0,0" GotFocus="Control_GotFocus"/>
+    <local:CardContentEditor x:Name="CriteriaText" Text="" Grid.Row="6" Grid.Column="2" Margin="0,3,0,3" IsEnabled="True" GotFocus="Control_GotFocus"/>
+    <CheckBox x:Name="IsTeamTaskCheck" Grid.Row="7" Grid.Column="2" VerticalAlignment="Center" GotFocus="Control_GotFocus"/>
 
-    <TabControl x:Name="TypeTabControl" Grid.Row="5" Grid.ColumnSpan="2">
-      <!-- TODO -->
-    </TabControl>
-
-    <Button x:Name="CancelButton" Content="Cancel" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Width="60" Margin="7,0,0,0" Click="CancelButton_Click"/>
-    <Button x:Name="InsertButton" Content="Insert Customizable" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Width="120" Margin="0,0,77,0" Click="InsertButton_Click"/>
-    <Button x:Name="SaveButton" Content="Save" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Width="60" Margin="0,0,7,0" Click="SaveButton_Click"/>
+    <Button x:Name="CancelButton" Content="Cancel" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Width="60" Margin="7,0,0,0" Click="CancelButton_Click"/>
+    <Button x:Name="InsertButton" Content="Insert Customizable" Grid.Row="8" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Width="120" Margin="0,0,78,0" Click="InsertButton_Click"/>
+    <Button x:Name="SaveButton" Content="Save" Grid.Row="8" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Width="60" Margin="0,0,7,0" Click="SaveButton_Click"/>
   </Grid>
 </Window>

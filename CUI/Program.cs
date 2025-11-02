@@ -32,8 +32,8 @@ namespace CUI
         static void Main(string[] args)
         {
             // draw game
-            CuiFormatter formatter = new CuiFormatter();
-            TextDatabase database = new TextDatabase(args[0], args[1], args[2], args[3], args[4], formatter);
+            CuiFormatter formatter = new();
+            TextDatabase database = new(args[0], args[1], args[2], args[3], args[4], formatter);
             string[] contestantNames = new string[args.Length - 5];
             Array.ConstrainedCopy(args, 5, contestantNames, 0, contestantNames.Length);
             Game game = database.DrawGame(contestantNames, 5, true, true);

@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:GUI"
              mc:Ignorable="d" 
-             d:DesignHeight="50" d:DesignWidth="200">
+             d:DesignHeight="50" d:DesignWidth="200" MouseDown="Control_MouseDown">
   <UserControl.Foreground>
     <SolidColorBrush Color="Black"/>
   </UserControl.Foreground>
@@ -15,5 +15,5 @@
   <UserControl.Background>
     <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
   </UserControl.Background>
-  <WrapPanel x:Name="CardContentWrapPanel" Cursor="IBeam"/>
+  <WrapPanel x:Name="CardContentWrapPanel" Cursor="IBeam" MouseDown="Control_MouseDown"/>
 </UserControl>

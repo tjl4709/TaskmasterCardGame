@@ -36,19 +36,16 @@ namespace GUI
         public string Text {
             get {
                 string text = "";
-                foreach (UIElement child in CardContentWrapPanel.Children) {
-                    if (child is Label label) {
-                        text += $" {label.Content}";
-                    } else if (child is TextBox textBox) {
-                        if (Customizing) {
-                            text += $" {textBox.Text}";
-                        } else {
-                            // text box will be in format "user-entered description:type"
-                            int colon_index = textBox.Text.LastIndexOf(":");
-                            string customizable = textBox.Text.Substring(0, colon_index + 1);
-                            customizable += char.ToLower(textBox.Text[colon_index + 1]);
-                            text += $"<<{customizable}>>";
-                        }
+                foreach (TextBox child in CardContentWrapPanel.Children) {
+                    // Customizables have their Tag set to the FormatType they're meant to parse
+                    if (Customizing || child.Tag == null) {
+                        text += $" {child.Text}";
+                    } else {
+                        // text box will be in format "user-entered description:type"
+                        int colon_index = child.Text.LastIndexOf(":");
+                        string customizable = child.Text.Substring(0, colon_index + 1);
+                        customizable += char.ToLower(child.Text[colon_index + 1]);
+                        text += $"<<{customizable}>>";
                     }
                 }
                 return text.Trim();
@@ -56,31 +53,38 @@ namespace GUI
             set {
                 CardContentWrapPanel.Children.Clear();
                 CursorIndex = 0;
-                string customizable;
-                int index;
-                while (!string.IsNullOrWhiteSpace(value)) {
-                    if (value.StartsWith(ICardFormatter.OPENING)) {
-                        index = value.IndexOf(ICardFormatter.CLOSING);
-                        if (index == -1)
-                            throw new FormatException("unclosed customizable");
-                        customizable = value.Substring(ICardFormatter.OPENING.Length, index - ICardFormatter.OPENING.Length);
-                        value = value.Substring(index + ICardFormatter.CLOSING.Length).TrimStart();
-                        index = customizable.IndexOf(':');
-                        if (index != -1 && index != customizable.Length - 2) {
-                            customizable = customizable.Substring(0, index + 2);
+
+                if (string.IsNullOrWhiteSpace(value)) {
+                    // if set to no text, create one blank label
+                    AddLabel(false);
+                } else {
+                    // otherwise, create labels and customizables based on set text
+                    string customizable;
+                    int index;
+                    while (!string.IsNullOrWhiteSpace(value)) {
+                        if (value.StartsWith(ICardFormatter.OPENING)) {
+                            index = value.IndexOf(ICardFormatter.CLOSING);
+                            if (index == -1)
+                                throw new FormatException("unclosed customizable");
+                            customizable = value.Substring(ICardFormatter.OPENING.Length, index - ICardFormatter.OPENING.Length);
+                            value = value.Substring(index + ICardFormatter.CLOSING.Length).TrimStart();
+                            index = customizable.IndexOf(':');
+                            if (index != -1 && index != customizable.Length - 2) {
+                                customizable = customizable.Substring(0, index + 2);
+                            }
+                            m_cardFormatter.Format(customizable);
+                        } else {    // normal token
+                            var label = AddLabel(true);
+                            index = value.IndexOf(' ');
+                            if (index == -1) {
+                                label.Text = value;
+                                value = "";
+                            } else {
+                                label.Text = value.Substring(0, index);
+                                value = value.Substring(index + 1).TrimStart();
+                            }
                         }
-                        m_cardFormatter.Format(customizable);
-                    } else {    // normal token
-                        var label = AddLabel(true);
-                        index = value.IndexOf(' ');
-                        if (index == -1) {
-                            label.Text = value;
-                            value = "";
-                        } else {
-                            label.Text = value.Substring(0, index);
-                            value = value.Substring(index + 1).TrimStart();
-                        }
-                    }
+                    }   // end while
                 }
             }
         }
@@ -94,11 +98,13 @@ namespace GUI
             : base()
         {
             InitializeComponent();
+
             if (string.IsNullOrWhiteSpace(text)) {
                 InsertLabel(0, true);
             } else {
                 Text = text;
             }
+
             if (Customizing = formatter != null) {
                 m_cardFormatter = formatter;
                 m_cardFormatter.ContentEditor = this;
@@ -115,7 +121,9 @@ namespace GUI
 
         public TextBox InsertCustomizableAtCursor(string description, FormatTypes type)
         {
-            var customizable = new TextBox();
+            var customizable = new TextBox {
+                MinWidth = 10
+            };
             string text = $"{description}:{type}";
             if (Customizing) {
                 if (TextBoxHelper.GetOrCreateAdorner(customizable, out TextBoxHelper.PlaceholderAdorner adorner)) {
@@ -128,7 +136,7 @@ namespace GUI
             } else {
                 customizable.Text = text;
                 customizable.GotFocus += TextBox_GotFocus;
-                customizable.KeyDown += DoSpecialTraversal;
+                customizable.PreviewKeyDown += DoSpecialTraversal;
                 customizable.TextChanged += VerifyTextHasValidFormatType;
             }
 
@@ -144,9 +152,13 @@ namespace GUI
         
         private TextBox InsertLabel(int index, bool setCursor)
         {
-            var label = new TextBox();
-            label.BorderBrush = Brushes.Transparent;
-            label.KeyDown += DoSpecialTraversal;
+            var label = new TextBox {
+                BorderBrush = Brushes.Transparent,
+                MinWidth = 10,
+                Tag = null
+            };
+            
+            label.PreviewKeyDown += DoSpecialTraversal;
             label.GotFocus += TextBox_GotFocus;
             CardContentWrapPanel.Children.Insert(index, label);
             if (setCursor) {
@@ -158,6 +170,7 @@ namespace GUI
         private void DoSpecialTraversal(object sender, KeyEventArgs e)
         {
             var textBox = (TextBox)sender;
+            bool isCustomizable = textBox.Tag != null;
             switch (e.Key) {
                 case Key.Back:
                     // if backspacing from the front of a token, combine it with the previous
@@ -202,18 +215,21 @@ namespace GUI
                     break;
                 case Key.Space:
                     // space will break the current token into two at the Caret and move it to the start of
-                    // the second newly created token
-                    if (textBox.SelectionLength > 0) {
-                        int caret = textBox.SelectionStart;
-                        textBox.Text = textBox.Text.Remove(textBox.SelectionStart, textBox.SelectionLength);
-                        textBox.CaretIndex = caret;
+                    // the second newly created token. Customizables can have spaces in them, but hitting space
+                    // at the end of one should still create a new blank item after it.
+                    if (!isCustomizable || textBox.CaretIndex == textBox.Text.Length) {
+                        if (textBox.SelectionLength > 0) {
+                            int caret = textBox.SelectionStart;
+                            textBox.Text = textBox.Text.Remove(textBox.SelectionStart, textBox.SelectionLength);
+                            textBox.CaretIndex = caret;
+                        }
+                        TextBox newLabel = InsertLabel(++CursorIndex, false);
+                        newLabel.Text = textBox.Text.Substring(textBox.CaretIndex);
+                        textBox.Text = textBox.Text.Substring(0, textBox.CaretIndex);
+                        newLabel.CaretIndex = 0;
+                        newLabel.Focus();
+                        e.Handled = true;
                     }
-                    TextBox newLabel = InsertLabel(++CursorIndex, false);
-                    newLabel.Text = textBox.Text.Substring(textBox.CaretIndex);
-                    textBox.Text = textBox.Text.Substring(0, textBox.CaretIndex);
-                    newLabel.CaretIndex = 0;
-                    newLabel.Focus();
-                    e.Handled = true;
                     break;
                 default:
                     // Do nothing, let the underlying event handler handle it
@@ -242,6 +258,13 @@ namespace GUI
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             CursorIndex = CardContentWrapPanel.Children.IndexOf((UIElement)sender);
+        }
+
+        private void Control_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var lastChild = (TextBox)CardContentWrapPanel.Children[CardContentWrapPanel.Children.Count - 1];
+            lastChild.Focus();
+            lastChild.CaretIndex = lastChild.Text.Length;
         }
     }
 }
