@@ -299,7 +299,7 @@ namespace GUI
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             CursorIndex = CardContentWrapPanel.Children.IndexOf((UIElement)sender);
-            BorderBrush = Brushes.AliceBlue;
+            BorderBrush = Brushes.SkyBlue;
         }
 
         private void Control_MouseDown(object sender, MouseButtonEventArgs e)
@@ -311,12 +311,19 @@ namespace GUI
 
         private void UserControl_MouseEnter(object sender, MouseEventArgs e)
         {
-            BorderBrush = Brushes.AliceBlue;
+            BorderBrush = Brushes.SkyBlue;
         }
 
         private void UserControl_MouseLeave(object sender, MouseEventArgs e)
         {
-            BorderBrush = Brushes.LightGray;
+            bool focused = false;
+            foreach (Control control in CardContentWrapPanel.Children) {
+                if (control.IsFocused) {
+                    focused = true;
+                    break;
+                }
+            }
+            if (!focused) BorderBrush = Brushes.LightGray;
         }
 
         private void UserControl_LostFocus(object sender, RoutedEventArgs e)

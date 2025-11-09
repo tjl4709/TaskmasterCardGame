@@ -73,6 +73,7 @@ namespace GUI
                     copiedCard = ICard.Create((TaskCard)originalCard);
                     break;
             }
+            copiedCard.MetaData.ID = 0;
             copiedCard = CardModal.EditCard(copiedCard);
             if (copiedCard != null) {
                 Database.AddCard(copiedCard);
