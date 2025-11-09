@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 
 namespace Backend
@@ -197,7 +196,7 @@ namespace Backend
         public string RawCriteria { get { return m_rawData == null ? "" : m_rawData[m_CRITERIA_INDEX]; } }
         public List<SimpleCard> Restrictions;
         public bool IsTeamTask { get; protected set; }
-        public string RawIsTeamTask { get { return m_rawData == null ? "" : m_rawData[m_IS_TEAM_TASK_INDEX]; } }
+        public string RawIsTeamTask { get { return m_rawData == null || m_rawData.Length <= m_IS_TEAM_TASK_INDEX? "" : m_rawData[m_IS_TEAM_TASK_INDEX]; } }
         
 
         public TaskCard()
@@ -210,7 +209,7 @@ namespace Backend
         {
             if (data.Length != 3 && data.Length != 4)
                 throw new FormatException($"Expected three fields (Materials, Action, Criteria[, Team]), but got {data.Length}");
-            if (data.Length == 4 && data[3].ToLower() != TEAM_MARK)
+            if (data.Length == 4 && data[m_IS_TEAM_TASK_INDEX].ToLower() != TEAM_MARK && data[m_IS_TEAM_TASK_INDEX] != "")
                 throw new FormatException($"Must use the \"{TEAM_MARK}\" mark in order to register this as a team task");
             return true;
         }

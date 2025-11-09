@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Controls;
@@ -46,17 +42,42 @@ namespace GUI
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)
         {
-            CardModal.CreateNewCard((CardType)(TableTabControl.SelectedIndex + 1));
+            SimpleCard newCard = CardModal.CreateNewCard((CardType)(TableTabControl.SelectedIndex + 1));
+            if (newCard != null) {
+                Database.AddCard(newCard);
+                CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource).Refresh();
+            }
         }
 
         private void EditCardButton_Click(object sender, RoutedEventArgs e)
         {
-
+            SimpleCard editedCard = CardModal.EditCard((SimpleCard)ActiveTable.SelectedItem);
+            if (editedCard != null) {
+                Database.UpdateCard(editedCard);
+                CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource).Refresh();
+            }
         }
 
         private void CopyCardButton_Click(object sender, RoutedEventArgs e)
         {
-
+            SimpleCard copiedCard, originalCard = (SimpleCard)ActiveTable.SelectedItem;
+            switch (originalCard.MetaData.CardType) {
+                case CardType.PrizeTask:
+                case CardType.Restriction:
+                    copiedCard = ICard.Create(originalCard);
+                    break;
+                case CardType.SecretTask:
+                    copiedCard = ICard.Create((ScoredCard)originalCard);
+                    break;
+                default:    // Task and FinalTask
+                    copiedCard = ICard.Create((TaskCard)originalCard);
+                    break;
+            }
+            copiedCard = CardModal.EditCard(copiedCard);
+            if (copiedCard != null) {
+                Database.AddCard(copiedCard);
+                CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource).Refresh();
+            }
         }
 
         private void DeleteCardButton_Click(object sender, RoutedEventArgs e)

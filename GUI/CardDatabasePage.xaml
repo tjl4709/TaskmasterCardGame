@@ -33,7 +33,7 @@
     </DockPanel>
     <TabControl x:Name="TableTabControl" Margin="0" Grid.Row="2">
       <TabItem x:Name="PrizeTaskTab" Header="Prize Tasks">
-        <DataGrid x:Name="PrizeTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource PrizeTaskView}}">
+        <DataGrid x:Name="PrizeTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource PrizeTaskView}}" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn x:Name="PrizeTaskIdColumn" Binding="{Binding MetaData.ID}" Header="ID" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="PrizeTaskCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created" CanUserReorder="False" IsReadOnly="True"/>
@@ -43,7 +43,7 @@
         </DataGrid>
       </TabItem>
       <TabItem x:Name="SecretTaskTab" Header="Secret Tasks" Margin="0">
-        <DataGrid x:Name="SecretTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource SecretTaskView}}">
+        <DataGrid x:Name="SecretTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource SecretTaskView}}" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn x:Name="SecretTaskIdColumn" Binding="{Binding MetaData.ID}" Header="ID"/>
             <DataGridTextColumn x:Name="SecretTaskCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created"/>
@@ -54,20 +54,20 @@
         </DataGrid>
       </TabItem>
       <TabItem x:Name="TaskTab" Header="Tasks" Margin="0">
-        <DataGrid x:Name="TaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource TaskView}}">
+        <DataGrid x:Name="TaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource TaskView}}" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn x:Name="TaskIdColumn" Binding="{Binding MetaData.ID}" Header="ID" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="TaskCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="TaskLastModifiedColumn" Binding="{Binding MetaData.LastModified}" Header="Last Modified" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="TaskDescriptionColumn" Binding="{Binding RawDescription}" Header="Description" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="TaskMaterialsColumn" Binding="{Binding RawMaterials}" Header="Materials" CanUserReorder="False" IsReadOnly="True"/>
-            <DataGridTextColumn x:Name="TaskCriteraColumn" Binding="{Binding RawCritera}" Header="Critera" CanUserReorder="False" IsReadOnly="True"/>
+            <DataGridTextColumn x:Name="TaskCriteraColumn" Binding="{Binding RawCriteria}" Header="Critera" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="TaskIsTeamTaskColumn" Binding="{Binding RawIsTeamTask}" Header="Is a Team Task" CanUserReorder="False" IsReadOnly="True"/>
           </DataGrid.Columns>
         </DataGrid>
       </TabItem>
       <TabItem x:Name="RestrictionTab" Header="Restrictions" Margin="0">
-        <DataGrid x:Name="RestrictionTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource RestrictionView}}">
+        <DataGrid x:Name="RestrictionTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource RestrictionView}}" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn x:Name="RestrictionIdColumn" Binding="{Binding MetaData.ID}" Header="ID" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="RestrictionCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created" CanUserReorder="False" IsReadOnly="True"/>
@@ -77,14 +77,14 @@
         </DataGrid>
       </TabItem>
       <TabItem x:Name="FinalTaskTab" Header="Final Tasks" Margin="0">
-        <DataGrid x:Name="FinalTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource FinalTaskView}}">
+        <DataGrid x:Name="FinalTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource FinalTaskView}}" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn x:Name="FinalTaskIdColumn" Binding="{Binding MetaData.ID}" Header="ID" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="FinalTaskCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="FinalTaskLastModifiedColumn" Binding="{Binding MetaData.LastModified}" Header="Last Modified" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="FinalTaskDescriptionColumn" Binding="{Binding RawDescription}" Header="Description" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="FinalTaskMaterialsColumn" Binding="{Binding RawMaterials}" Header="Materials" CanUserReorder="False" IsReadOnly="True"/>
-            <DataGridTextColumn x:Name="FinalTaskCriteraColumn" Binding="{Binding RawCritera}" Header="Critera" CanUserReorder="False" IsReadOnly="True"/>
+            <DataGridTextColumn x:Name="FinalTaskCriteraColumn" Binding="{Binding RawCriteria}" Header="Critera" CanUserReorder="False" IsReadOnly="True"/>
             <DataGridTextColumn x:Name="FinalTaskIsTeamTaskColumn" Binding="{Binding RawIsTeamTask}" Header="Is a Team Task" CanUserReorder="False" IsReadOnly="True"/>
           </DataGrid.Columns>
         </DataGrid>

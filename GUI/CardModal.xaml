@@ -40,7 +40,7 @@
     <TextBox x:Name="CardTypeText" Text="Task" IsReadOnly="True" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="0" Background="LightGray" GotFocus="Control_GotFocus"/>
     <local:CardContentEditor x:Name="DescriptionText" Text="" Grid.Row="4" Grid.Column="2" Margin="0,3,0,3" IsEnabled="True" GotFocus="Control_GotFocus"/>
     <local:CardContentEditor x:Name="MaterialText" Text="" Grid.Row="5" Grid.Column="2" Margin="0,3,0,3" IsEnabled="True" GotFocus="Control_GotFocus"/>
-    <TextBox x:Name="ScoreText" Text="5" Grid.Row="5" Grid.Column="2" VerticalAlignment="Top" Margin="0,3,0,0" GotFocus="Control_GotFocus"/>
+    <TextBox x:Name="ScoreText" Text="5" Grid.Row="5" Grid.Column="2" VerticalAlignment="Top" Margin="0,3,0,0" GotFocus="Control_GotFocus" ToolTip="Enter a number for a static score or a description for a customizable score"/>
     <local:CardContentEditor x:Name="CriteriaText" Text="" Grid.Row="6" Grid.Column="2" Margin="0,3,0,3" IsEnabled="True" GotFocus="Control_GotFocus"/>
     <CheckBox x:Name="IsTeamTaskCheck" Grid.Row="7" Grid.Column="2" VerticalAlignment="Center" GotFocus="Control_GotFocus"/>
 

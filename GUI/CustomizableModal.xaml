@@ -11,7 +11,7 @@
       <RowDefinition x:Name="DescriptionRow"/>
       <RowDefinition x:Name="SpacingRow1" Height="3"/>
       <RowDefinition x:Name="InputTypeRow" Height="Auto"/>
-      <RowDefinition x:Name="SpacingRow2" Height="3"/>
+      <RowDefinition x:Name="SpacingRow2" Height="5"/>
       <RowDefinition x:Name="ButtonRow" Height="Auto"/>
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>

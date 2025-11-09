@@ -11,8 +11,9 @@ namespace GUI
     {
         public CardContentEditor ContentEditor;
 
-        public GuiCardFormatter()
+        public GuiCardFormatter(CardContentEditor contentEditor = null)
         {
+            ContentEditor = contentEditor;
         }
 
         public override string Prompt(string description, FormatTypes type)
@@ -45,7 +46,7 @@ namespace GUI
                         int colon_index = child.Text.LastIndexOf(":");
                         string customizable = child.Text.Substring(0, colon_index + 1);
                         customizable += char.ToLower(child.Text[colon_index + 1]);
-                        text += $"<<{customizable}>>";
+                        text += $" {ICardFormatter.OPENING}{customizable}{ICardFormatter.CLOSING}";
                     }
                 }
                 return text.Trim();
@@ -66,11 +67,12 @@ namespace GUI
                             index = value.IndexOf(ICardFormatter.CLOSING);
                             if (index == -1)
                                 throw new FormatException("unclosed customizable");
-                            customizable = value.Substring(ICardFormatter.OPENING.Length, index - ICardFormatter.OPENING.Length);
-                            value = value.Substring(index + ICardFormatter.CLOSING.Length).TrimStart();
+                            index += ICardFormatter.CLOSING.Length;
+                            customizable = value.Substring(0, index);
+                            value = value.Substring(index).TrimStart();
                             index = customizable.IndexOf(':');
-                            if (index != -1 && index != customizable.Length - 2) {
-                                customizable = customizable.Substring(0, index + 2);
+                            if (index != -1 && index != customizable.Length - ICardFormatter.CLOSING.Length - 2) {
+                                customizable = customizable.Substring(0, index + 2) + ICardFormatter.CLOSING;
                             }
                             m_cardFormatter.Format(customizable);
                         } else {    // normal token
@@ -86,6 +88,16 @@ namespace GUI
                         }
                     }   // end while
                 }
+            }
+        }
+
+        public bool HasError {
+            get {
+                foreach (TextBox textBox in CardContentWrapPanel.Children) {
+                    if (textBox.Tag != null && textBox.Background == Brushes.Salmon)
+                        return true;
+                }
+                return false;
             }
         }
 
@@ -108,6 +120,8 @@ namespace GUI
             if (Customizing = formatter != null) {
                 m_cardFormatter = formatter;
                 m_cardFormatter.ContentEditor = this;
+            } else {
+                m_cardFormatter = new GuiCardFormatter(this);
             }
         }
 
@@ -122,13 +136,13 @@ namespace GUI
         public TextBox InsertCustomizableAtCursor(string description, FormatTypes type)
         {
             var customizable = new TextBox {
-                MinWidth = 10
+                MinWidth = 10,
+                Tag = type
             };
             string text = $"{description}:{type}";
             if (Customizing) {
                 if (TextBoxHelper.GetOrCreateAdorner(customizable, out TextBoxHelper.PlaceholderAdorner adorner)) {
                     TextBoxHelper.SetPlaceholder(customizable, text);
-                    customizable.Tag = type;
                     customizable.TextChanged += VerifyTextMatchesFormat;
                 } else {
                     customizable = null;
@@ -141,6 +155,14 @@ namespace GUI
             }
 
             if (customizable != null) {
+                if (CardContentWrapPanel.Children.Count > 0) {
+                    // if current index is not blank
+                    if (((TextBox)CardContentWrapPanel.Children[CursorIndex]).Text.Length > 0) {
+                        ++CursorIndex;  // add customizabe after it
+                    } else {    // current index is blank, so replace it with customizable
+                        CardContentWrapPanel.Children.RemoveAt(CursorIndex);
+                    }
+                }
                 CardContentWrapPanel.Children.Insert(CursorIndex, customizable);
                 customizable.CaretIndex = customizable.Text.Length;
                 customizable.Focus();
@@ -153,9 +175,10 @@ namespace GUI
         private TextBox InsertLabel(int index, bool setCursor)
         {
             var label = new TextBox {
-                BorderBrush = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
                 MinWidth = 10,
-                Tag = null
+                Tag = null,
+                IsReadOnly = Customizing
             };
             
             label.PreviewKeyDown += DoSpecialTraversal;
@@ -174,7 +197,7 @@ namespace GUI
             switch (e.Key) {
                 case Key.Back:
                     // if backspacing from the front of a token, combine it with the previous
-                    if (textBox.SelectionLength == 0 && textBox.CaretIndex == 0 && CursorIndex != 0) {
+                    if (!Customizing && textBox.SelectionLength == 0 && textBox.CaretIndex == 0 && CursorIndex != 0) {
                         CardContentWrapPanel.Children.RemoveAt(CursorIndex);
                         var previous = (TextBox)CardContentWrapPanel.Children[--CursorIndex];
                         int previousCaret = previous.Text.Length;
@@ -186,7 +209,7 @@ namespace GUI
                     break;
                 case Key.Delete:
                     // if deleting from the end of a token, combine it with the next
-                    if (textBox.SelectionLength == 0 && textBox.CaretIndex == textBox.Text.Length && CursorIndex < CardContentWrapPanel.Children.Count - 1) {
+                    if (!Customizing && textBox.SelectionLength == 0 && textBox.CaretIndex == textBox.Text.Length && CursorIndex < CardContentWrapPanel.Children.Count - 1) {
                         CardContentWrapPanel.Children.RemoveAt(CursorIndex);
                         var next = (TextBox)CardContentWrapPanel.Children[CursorIndex];
                         next.Text = textBox.Text + next.Text;
@@ -217,7 +240,7 @@ namespace GUI
                     // space will break the current token into two at the Caret and move it to the start of
                     // the second newly created token. Customizables can have spaces in them, but hitting space
                     // at the end of one should still create a new blank item after it.
-                    if (!isCustomizable || textBox.CaretIndex == textBox.Text.Length) {
+                    if (!Customizing && (!isCustomizable || textBox.CaretIndex == textBox.Text.Length)) {
                         if (textBox.SelectionLength > 0) {
                             int caret = textBox.SelectionStart;
                             textBox.Text = textBox.Text.Remove(textBox.SelectionStart, textBox.SelectionLength);
@@ -237,27 +260,46 @@ namespace GUI
             }
         }
 
+        private void SetCustomizableError(TextBox customizable, bool hasError, string errorMessage)
+        {
+            if (hasError) {
+                customizable.ToolTip = errorMessage;
+                customizable.Background = Brushes.Salmon;
+                customizable.BorderBrush = Brushes.Red;
+            } else {
+                customizable.ToolTip = null;
+                customizable.Background = Brushes.White;
+                customizable.BorderBrush = Brushes.Gray;
+            }
+        }
+
         private void VerifyTextMatchesFormat(object sender, EventArgs e)
         {
-            var textBox = (TextBox)sender;
+            var customizable = (TextBox)sender;
             if (Customizing) {
-                if (!m_cardFormatter.Verify(textBox.Text, (FormatTypes)textBox.Tag))
-                    throw new FormatException($"Failed to parse \"{textBox.Text}\" as {(FormatTypes)textBox.Tag}");
+                FormatTypes type = (FormatTypes)customizable.Tag;
+                bool error = !m_cardFormatter.Verify(customizable.Text, type);
+                SetCustomizableError(customizable, error, $"Could not parse as {type}");
             }
         }
 
         private void VerifyTextHasValidFormatType(object sender, EventArgs e)
         {
-            var textBox = (TextBox)sender;
+            var customizable = (TextBox)sender;
             if (!Customizing) {
-                string formatType = textBox.Text.Substring(textBox.Text.LastIndexOf(':') + 1);
-                Enum.Parse(typeof(FormatTypes), formatType);
+                string stringValue = customizable.Text.Substring(customizable.Text.LastIndexOf(':') + 1);
+                bool error = !Enum.TryParse(stringValue, out FormatTypes type);
+                SetCustomizableError(customizable, error, "Invalid format type");
+                if (!error) {
+                    customizable.Tag = type;
+                }
             }
         }
 
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             CursorIndex = CardContentWrapPanel.Children.IndexOf((UIElement)sender);
+            BorderBrush = Brushes.AliceBlue;
         }
 
         private void Control_MouseDown(object sender, MouseButtonEventArgs e)
@@ -265,6 +307,21 @@ namespace GUI
             var lastChild = (TextBox)CardContentWrapPanel.Children[CardContentWrapPanel.Children.Count - 1];
             lastChild.Focus();
             lastChild.CaretIndex = lastChild.Text.Length;
+        }
+
+        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
+        {
+            BorderBrush = Brushes.AliceBlue;
+        }
+
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
+        {
+            BorderBrush = Brushes.LightGray;
+        }
+
+        private void UserControl_LostFocus(object sender, RoutedEventArgs e)
+        {
+            BorderBrush = Brushes.LightGray;
         }
     }
 }

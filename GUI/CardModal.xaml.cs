@@ -1,15 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+using System.Collections.Generic;
 using Backend;
 
 namespace GUI
@@ -20,11 +11,7 @@ namespace GUI
     public partial class CardModal : Window
     {
         public CardMetaData MetaData { get; protected set; }
-        public string Description { get; protected set; }
-        public string Materials { get; protected set; }
-        public string Critera { get; protected set; }
-        public string Score { get; protected set; }
-        public bool IsTeamTask { get; protected set; }
+        public SimpleCard EditedCard { get; protected set; }
 
         protected CardContentEditor m_focusedContentEditor = null;
 
@@ -33,7 +20,7 @@ namespace GUI
             InitializeComponent();
         }
 
-        public static bool CreateNewCard(CardType cardType)
+        public static SimpleCard CreateNewCard(CardType cardType)
         {
             CardMetaData metaData = new CardMetaData(DateTime.Now, cardType);
             SimpleCard card;
@@ -45,18 +32,19 @@ namespace GUI
                 case CardType.SecretTask:
                     card = new ScoredCard();
                     break;
-                default:
+                default:    // Task and FinalTask types
                     card = new TaskCard();
                     break;
             }
             card.MetaData = metaData;
-            return new CardModal().SetCard(card, true);
+            return new CardModal().SetCard(card);
         }
-        public static bool EditCard(SimpleCard card)
+        public static SimpleCard EditCard(SimpleCard card)
         {
-            return new CardModal().SetCard(card, false);
+            card.MetaData.LastModified = DateTime.Now;
+            return new CardModal().SetCard(card);
         }
-        protected bool SetCard(SimpleCard card, bool creatingNewCard)
+        protected SimpleCard SetCard(SimpleCard card)
         {
             MetaData = card.MetaData;
 
@@ -80,7 +68,12 @@ namespace GUI
             DescriptionText.Text = card.RawDescription;
             if (card is ScoredCard scoredCard) {
                 ScoreLabel.Visibility = ScoreText.Visibility = Visibility.Visible;
-                ScoreText.Text = scoredCard.RawScore;
+                if (!string.IsNullOrWhiteSpace(scoredCard.RawScore) && scoredCard.RawScore.StartsWith(ICardFormatter.OPENING)) {
+                    int index = scoredCard.RawScore.IndexOf(':');
+                    ScoreText.Text = scoredCard.RawScore.Substring(ICardFormatter.OPENING.Length, index - ICardFormatter.OPENING.Length);
+                } else {
+                    ScoreText.Text = scoredCard.RawScore;
+                }
             } else if (card is TaskCard taskCard) {
                 MaterialLabel.Visibility = MaterialText.Visibility =
                     CriteriaLabel.Visibility = CriteriaText.Visibility =
@@ -90,7 +83,7 @@ namespace GUI
                 IsTeamTaskCheck.IsChecked = taskCard.IsTeamTask;
             }
 
-            return ShowDialog() ?? false;
+            return ShowDialog() == true ? EditedCard : null;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -99,20 +92,61 @@ namespace GUI
         }
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(DescriptionText.Text)) {
-                MessageBox.Show("Please enter a description.", "No Description", MessageBoxButton.OK, MessageBoxImage.Error);
-            } else if (MaterialText.IsVisible && string.IsNullOrWhiteSpace(MaterialText.Text)) {
-                MessageBox.Show("Please enter the required materials.", "No Materials", MessageBoxButton.OK, MessageBoxImage.Error);
-            } else if (CriteriaText.IsVisible && string.IsNullOrWhiteSpace(CriteriaText.Text)) {
-                MessageBox.Show("Please enter the criteria.", "No Criteria", MessageBoxButton.OK, MessageBoxImage.Error);
-            } else if (ScoreText.IsVisible && string.IsNullOrWhiteSpace(ScoreText.Text)) {
-                MessageBox.Show("Please enter a score.", "No Score", MessageBoxButton.OK, MessageBoxImage.Error);
+            string message = "", title = "Invalid Description";
+            // check for valid description
+            if (DescriptionText.HasError) {
+                message = "Please fixe the error in the description.";
+            } else if (string.IsNullOrWhiteSpace(DescriptionText.Text)) {
+                message = "Please enter a description.";
+            }
+            // check for valid score
+            else if (message.Length == 0 && ScoreText.IsVisible && string.IsNullOrWhiteSpace(ScoreText.Text)) {
+                message = "Please enter a score.";
+                title = "Invalid Score";
+            }
+            // check for valid materials
+            else if (MaterialText.IsVisible) {
+                title = "Invalid Materials";
+                if (MaterialText.HasError) {
+                    message = "Please fix the error in the materials.";
+                } else if (string.IsNullOrWhiteSpace(MaterialText.Text)) {
+                    message = "Please enter the required materials.";
+                }
+            }
+            // check for valid criteria
+            if (message.Length == 0 && CriteriaText.IsVisible) {
+                title = "Invalid Criteria";
+                if (CriteriaText.HasError) {
+                    message = "Please fix the error in the criteria.";
+                } else if (string.IsNullOrWhiteSpace(CriteriaText.Text)) {
+                    message = "Please enter the criteria.";
+                }
+            }
+
+            // display error or save data
+            if (message.Length > 0) {
+                MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
             } else {
-                Description = DescriptionText.Text;
-                Materials = MaterialText.Text;
-                Critera = CriteriaText.Text;
-                Score = ScoreText.Text;
-                IsTeamTask = IsTeamTaskCheck.IsChecked == true;
+                switch (MetaData.CardType) {
+                    case CardType.PrizeTask:
+                    case CardType.Restriction:
+                        EditedCard = ICard.Create<SimpleCard>(new string[] { DescriptionText.Text }, MetaData);
+                        break;
+                    case CardType.SecretTask:
+                        string score = ScoreText.Text;
+                        if (!int.TryParse(score, out _)) {
+                            score = "<<" + score + ":i>>";
+                        }
+                        EditedCard = ICard.Create<ScoredCard>(new string[] { DescriptionText.Text, score }, MetaData);
+                        break;
+                    default:    // Task and FinalTask types
+                        List<string> rawData = new List<string>() { MaterialText.Text, DescriptionText.Text, CriteriaText.Text };
+                        if (IsTeamTaskCheck.IsChecked == true) {
+                            rawData.Add(TaskCard.TEAM_MARK);
+                        }
+                        EditedCard = ICard.Create<TaskCard>(rawData.ToArray(), MetaData);
+                        break;
+                }
                 DialogResult = true;
             }
         }

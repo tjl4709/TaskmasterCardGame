@@ -76,6 +76,7 @@
     <Compile Include="DatabaseWindow.xaml.cs">
       <DependentUpon>DatabaseWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SqlDatabase.cs" />
     <Compile Include="TextBoxHelper.cs" />
     <Page Include="CardContentEditor.xaml">
       <SubType>Designer</SubType>

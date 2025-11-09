@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using Microsoft.Data.Sqlite;
+using Backend;
 
-namespace Backend
+namespace GUI
 {
     public class SqlDatabase : IDatabase
     {
@@ -257,26 +259,31 @@ namespace Backend
                     for (int i = 0; i < rawData.Length; ++i) {
                         rawData[i] = reader.GetString(i + 3);
                     }
-                    
+
                     // create card and add to relevant list
-                    switch (cardType) {
-                        case CardType.PrizeTask:
-                            m_loadedPrizeTasks.Add(ICard.Create<SimpleCard>(rawData, metaData));
-                            break;
-                        case CardType.SecretTask:
-                            m_loadedSecretTasks.Add(ICard.Create<ScoredCard>(rawData, metaData));
-                            break;
-                        case CardType.Task:
-                            m_loadedTasks.Add(ICard.Create<TaskCard>(rawData, metaData));
-                            break;
-                        case CardType.Restriction:
-                            m_loadedRestrictions.Add(ICard.Create<SimpleCard>(rawData, metaData));
-                            break;
-                        case CardType.FinalTask:
-                            m_loadedFinalTasks.Add(ICard.Create<TaskCard>(rawData, metaData));
-                            break;
-                        default:
-                            throw new ArgumentException("cannot add card of unknown card type", "cardType");
+                    try {
+                        switch (cardType) {
+                            case CardType.PrizeTask:
+                                m_loadedPrizeTasks.Add(ICard.Create<SimpleCard>(rawData, metaData));
+                                break;
+                            case CardType.SecretTask:
+                                m_loadedSecretTasks.Add(ICard.Create<ScoredCard>(rawData, metaData));
+                                break;
+                            case CardType.Task:
+                                m_loadedTasks.Add(ICard.Create<TaskCard>(rawData, metaData));
+                                break;
+                            case CardType.Restriction:
+                                m_loadedRestrictions.Add(ICard.Create<SimpleCard>(rawData, metaData));
+                                break;
+                            case CardType.FinalTask:
+                                m_loadedFinalTasks.Add(ICard.Create<TaskCard>(rawData, metaData));
+                                break;
+                            default:
+                                throw new ArgumentException("cannot add card of unknown card type", "cardType");
+                        }
+                    } catch (Exception e) {
+                        MessageBox.Show(e.Message, $"Error While Loading a {cardType} Card:", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // TODO: allow user to edit card?
                     }
                 }
             }
@@ -302,10 +309,10 @@ namespace Backend
             // create insert command with common data
             TableData table = m_TABLES[card.MetaData.CardType];
             string insertColumns = string.Join(", ", table.Columns.Skip(1).Select(col => col.Name));
-            var insertCommand = new SqliteCommand($"INSERT INTO {table.Name} ({insertColumns}) VALUES (@created, @last_modified, '@description'", m_connection);
+            var insertCommand = new SqliteCommand($"INSERT INTO {table.Name} ({insertColumns}) VALUES (@created, @last_modified, @description", m_connection);
             insertCommand.Parameters.AddWithValue("@created", card.MetaData.Created.ToBinary());
             insertCommand.Parameters.AddWithValue("@last_modified", card.MetaData.LastModified.ToBinary());
-            insertCommand.Parameters.AddWithValue("@description", card.Description);
+            insertCommand.Parameters.AddWithValue("@description", card.RawDescription);
 
             // handle specifics based on type of card
             switch (card.MetaData.CardType) {
@@ -315,17 +322,17 @@ namespace Backend
                 case CardType.SecretTask:
                     ScoredCard scoredCard = (ScoredCard)card;
                     // add extra data to command
-                    insertCommand.CommandText += ", '@score'";
-                    insertCommand.Parameters.AddWithValue("@score", scoredCard.Score);
+                    insertCommand.CommandText += ", @score";
+                    insertCommand.Parameters.AddWithValue("@score", scoredCard.RawScore);
                     break;
                 case CardType.Task:
                 case CardType.FinalTask:
                     TaskCard taskCard = (TaskCard)card;
                     // add extra data to command
-                    insertCommand.CommandText += ", '@material', '@criteria', '@is_team'";
-                    insertCommand.Parameters.AddWithValue("@material", taskCard.Materials);
-                    insertCommand.Parameters.AddWithValue("@criteria", taskCard.Criteria);
-                    insertCommand.Parameters.AddWithValue("@is_team", taskCard.IsTeamTask);
+                    insertCommand.CommandText += ", @material, @criteria, @is_team";
+                    insertCommand.Parameters.AddWithValue("@material", taskCard.RawMaterials);
+                    insertCommand.Parameters.AddWithValue("@criteria", taskCard.RawCriteria);
+                    insertCommand.Parameters.AddWithValue("@is_team", taskCard.RawIsTeamTask);
                     break;
                 default:
                     throw new ArgumentException("cannot add card of unknown card type", "cardType");
@@ -349,25 +356,25 @@ namespace Backend
             if (card.MetaData.LastModified == DateTime.FromBinary(0))
                 card.MetaData.LastModified = DateTime.Now;
 
-            var command = new SqliteCommand($"UPDATE {m_TABLES[card.MetaData.CardType].Name} SET last_modified = @modified, description = '@description'", m_connection);
+            var command = new SqliteCommand($"UPDATE {m_TABLES[card.MetaData.CardType].Name} SET last_modified = @modified, description = @description", m_connection);
             command.Parameters.AddWithValue("@modified", card.MetaData.LastModified.ToBinary());
-            command.Parameters.AddWithValue("@description", card.Description);
+            command.Parameters.AddWithValue("@description", card.RawDescription);
 
             switch (card.MetaData.CardType) {
                 case CardType.PrizeTask:
                 case CardType.Restriction:
                     break;
                 case CardType.SecretTask:
-                    command.CommandText += ", score = '@score'";
-                    command.Parameters.AddWithValue("@score", ((ScoredCard)card).Score);
+                    command.CommandText += ", score = @score";
+                    command.Parameters.AddWithValue("@score", ((ScoredCard)card).RawScore);
                     break;
                 case CardType.Task:
                 case CardType.FinalTask:
-                    command.CommandText += ", material = '@material', criteria = '@critera', is_team = '@is_team'";
+                    command.CommandText += ", material = @material, criteria = @critera, is_team = @is_team";
                     TaskCard taskCard = (TaskCard)card;
-                    command.Parameters.AddWithValue("@material", taskCard.Materials);
-                    command.Parameters.AddWithValue("@critera", taskCard.Criteria);
-                    command.Parameters.AddWithValue("@is_team", taskCard.IsTeamTask);
+                    command.Parameters.AddWithValue("@material", taskCard.RawMaterials);
+                    command.Parameters.AddWithValue("@critera", taskCard.RawCriteria);
+                    command.Parameters.AddWithValue("@is_team", taskCard.RawIsTeamTask);
                     break;
                 default:
                     throw new ArgumentException("cannot update card of unknown card type", "cardType");
