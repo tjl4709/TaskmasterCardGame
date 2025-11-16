@@ -62,7 +62,11 @@ namespace GUI
             }
         }
 
+        public string FilePath { get; protected set; }
+
         protected SqliteConnection m_connection;
+        protected SqliteTransaction m_transaction = null;
+
         /// <summary>
         /// this contains the column names and types expected for each table in the database
         /// </summary>
@@ -105,6 +109,13 @@ namespace GUI
                 new ColumnData("is_team", "TEXT NOT NULL")
             })},
         };
+
+        /// <summary>
+        /// these are the file names for the files associated with a text database
+        /// </summary>
+        protected static string[] m_TEXT_DB_FILE_NAMES = new string[5] {
+            "prize_tasks", "secret_tasks", "tasks", "restrictions", "final_tasks"
+        };
         #endregion
 
         public SqlDatabase(string filePath, ICardFormatter formatter)
@@ -124,6 +135,7 @@ namespace GUI
             m_finalTasks   = new List<TaskCard>();
 
             // open database (if it did not exist, a new one will be created)
+            FilePath = filePath;
             SQLitePCL.Batteries.Init();
             m_connection = new SqliteConnection($"Data Source={filePath}");
             m_connection.Open();
@@ -149,7 +161,8 @@ namespace GUI
         protected void CheckTables()
         {
             // retrieve current tables
-            var tableQueryCommand = new SqliteCommand("SELECT name, sql FROM sqlite_schema WHERE type='table';", m_connection);
+            var tableQueryCommand = m_connection.CreateCommand();
+            tableQueryCommand.CommandText = "SELECT name, sql FROM sqlite_schema WHERE type='table';";
             var reader = tableQueryCommand.ExecuteReader();
             var currentTables = new Dictionary<string, string>();
             if (reader.HasRows) {
@@ -198,7 +211,8 @@ namespace GUI
 
                         if (!found || !matches) {
                             // setup command to add missing or mismatched column
-                            var columnCommand = new SqliteCommand($"ALTER TABLE {requiredTable.Name} ADD COLUMN {requiredCol};", m_connection);
+                            var columnCommand = m_connection.CreateCommand();
+                            columnCommand.CommandText = $"ALTER TABLE {requiredTable.Name} ADD COLUMN {requiredCol};";
                             if (found && !matches) {
                                 // the column was found, but it doesn't have the right type,
                                 // so rename the old column before adding the new one
@@ -225,7 +239,8 @@ namespace GUI
         protected void ReadCardTable(CardType cardType)
         {
             // read all the data from the given table
-            var readCardsCommand = new SqliteCommand($"Select * from {m_TABLES[cardType].Name};", m_connection);
+            var readCardsCommand = m_connection.CreateCommand();
+            readCardsCommand.CommandText = $"Select * from {m_TABLES[cardType].Name};";
             var reader = readCardsCommand.ExecuteReader();
             
             // clear relevant list
@@ -309,7 +324,8 @@ namespace GUI
             // create insert command with common data
             TableData table = m_TABLES[card.MetaData.CardType];
             string insertColumns = string.Join(", ", table.Columns.Skip(1).Select(col => col.Name));
-            var insertCommand = new SqliteCommand($"INSERT INTO {table.Name} ({insertColumns}) VALUES (@created, @last_modified, @description", m_connection);
+            var insertCommand = m_connection.CreateCommand();
+            insertCommand.CommandText = $"INSERT INTO {table.Name} ({insertColumns}) VALUES (@created, @last_modified, @description";
             insertCommand.Parameters.AddWithValue("@created", card.MetaData.Created.ToBinary());
             insertCommand.Parameters.AddWithValue("@last_modified", card.MetaData.LastModified.ToBinary());
             insertCommand.Parameters.AddWithValue("@description", card.RawDescription);
@@ -356,7 +372,8 @@ namespace GUI
             if (card.MetaData.LastModified == DateTime.FromBinary(0))
                 card.MetaData.LastModified = DateTime.Now;
 
-            var command = new SqliteCommand($"UPDATE {m_TABLES[card.MetaData.CardType].Name} SET last_modified = @modified, description = @description", m_connection);
+            var command = m_connection.CreateCommand();
+            command.CommandText = $"UPDATE {m_TABLES[card.MetaData.CardType].Name} SET last_modified = @modified, description = @description";
             command.Parameters.AddWithValue("@modified", card.MetaData.LastModified.ToBinary());
             command.Parameters.AddWithValue("@description", card.RawDescription);
 
@@ -396,7 +413,8 @@ namespace GUI
                 return false;
 
             // remove card from database
-            var commamd = new SqliteCommand($"DELETE FROM {m_TABLES[card.MetaData.CardType].Name} WHERE id = @id;", m_connection);
+            var commamd = m_connection.CreateCommand();
+            commamd.CommandText = $"DELETE FROM {m_TABLES[card.MetaData.CardType].Name} WHERE id = @id;";
             commamd.Parameters.AddWithValue("@id", card.MetaData.ID);
             bool success = commamd.ExecuteNonQuery() == 1;
             
@@ -406,12 +424,62 @@ namespace GUI
             return success;
         }
 
+        public bool ImportTextDatabases(IEnumerable<string> files)
+        {
+            List<string[]> databases = new List<string[]>();
+            bool added, success = true;
+            int index;
+            string fileName;
+
+            // verify and sort files
+            foreach (string file in files) {
+                // verify this is a valid file
+                fileName = Path.GetFileNameWithoutExtension(file);
+                index = Array.IndexOf(m_TEXT_DB_FILE_NAMES, fileName);
+                if (index == -1) {
+                    success = false;
+                    MessageBox.Show($"\"{file}\" must have one of the following file names: {string.Join(", ", m_TEXT_DB_FILE_NAMES)}",
+                        "Invalid File Chosen:", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                // add it to the list of databases to import
+                //   if there's an open spot for the current file's type, add it to that database
+                added = false;
+                for (int i = 0; i < databases.Count; ++i) {
+                    if (databases[i][index] == null) {
+                        added = true;
+                        databases[i][index] = file;
+                    }
+                }
+                if (!added) {
+                    string[] newDatabase = new string[5];
+                    newDatabase[index] = file;
+                    databases.Add(newDatabase);
+                }
+            }
+
+            // import files
+            for (int i = 0; success && i < databases.Count; ++i) {
+                success = ImportTextDatabase(databases[i][0], databases[i][1],
+                    databases[i][2], databases[i][3], databases[i][4]);
+            }
+            return success;
+        }
+
         public bool ImportTextDatabase(string prizeTaskFile, string secretTaskFile,
             string taskFile, string restrictionFile, string finalTaskFile)
         {
-            var textDatabase = new TextDatabase(prizeTaskFile, secretTaskFile,
-                taskFile, restrictionFile, finalTaskFile, m_formatter);
-            SqliteTransaction transaction = m_connection.BeginTransaction();
+            // attempt to open text database
+            TextDatabase textDatabase;
+            try {
+                textDatabase = new TextDatabase(prizeTaskFile, secretTaskFile,
+                    taskFile, restrictionFile, finalTaskFile, m_formatter);
+            } catch (Exception e) {
+                MessageBox.Show(e.Message, "Failed to Parse Database:", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            m_transaction = m_connection.BeginTransaction();
             bool success = true;
             CardMetaData metaData;
 
@@ -497,11 +565,12 @@ namespace GUI
 
             // complete transaction
             if (success) {
-                transaction.Commit();
+                m_transaction.Commit();
                 ReadAllCards();
             } else
-                transaction.Rollback();
-            transaction.Dispose();
+                m_transaction.Rollback();
+            m_transaction.Dispose();
+            m_transaction = null;
 
             return success;
         }

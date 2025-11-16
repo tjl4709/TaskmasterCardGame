@@ -24,21 +24,20 @@
 
     <DockPanel x:Name="MenuControlsDockPanel">
       <Button x:Name="BackButton" Content="Back" HorizontalAlignment="Left" VerticalAlignment="Center" Height="20" Margin="3,0,0,0" Width="60"/>
-      <Button x:Name="ImportButton" DockPanel.Dock="Right" Content="Import" HorizontalAlignment="Right" VerticalAlignment="Bottom" Height="20" Margin="0,0,3,7.2" Width="60"/>
+      <Button x:Name="ImportButton" DockPanel.Dock="Right" Content="Import" HorizontalAlignment="Right" VerticalAlignment="Bottom" Height="20" Margin="0,0,3,7.2" Width="60" Click="ImportButton_Click"/>
     </DockPanel>
     <DockPanel x:Name="CardFilterDockPanel" Margin="0,0,0,5" Grid.Row="1" >
-      <Button x:Name="SearchButton" Content="Search" Width="60" Height="20" Margin="3,2,3,1.2" DockPanel.Dock="Right"/>
       <TextBox x:Name="SearchCriteriaEdit" TextWrapping="Wrap" VerticalAlignment="Center"
-            local:TextBoxHelper.Placeholder="Search Criteria" Margin="3,3,3,2.2"/>
+            local:TextBoxHelper.Placeholder="Search Criteria" Margin="3,3,3,2.2" TextChanged="SearchCriteriaEdit_TextChanged"/>
     </DockPanel>
-    <TabControl x:Name="TableTabControl" Margin="0" Grid.Row="2">
+    <TabControl x:Name="TableTabControl" Margin="0" Grid.Row="2" Padding="0">
       <TabItem x:Name="PrizeTaskTab" Header="Prize Tasks">
         <DataGrid x:Name="PrizeTaskTable" AutoGenerateColumns="False" ItemsSource="{Binding Mode=OneWay, Source={StaticResource PrizeTaskView}}" IsReadOnly="True">
           <DataGrid.Columns>
-            <DataGridTextColumn x:Name="PrizeTaskIdColumn" Binding="{Binding MetaData.ID}" Header="ID" CanUserReorder="False" IsReadOnly="True"/>
-            <DataGridTextColumn x:Name="PrizeTaskCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created" CanUserReorder="False" IsReadOnly="True"/>
-            <DataGridTextColumn x:Name="PrizeTaskLastModifiedColumn" Binding="{Binding MetaData.LastModified}" Header="Last Modified" CanUserReorder="False" IsReadOnly="True"/>
-            <DataGridTextColumn x:Name="PrizeTaskDescriptionColumn" Binding="{Binding RawDescription}" Header="Description" CanUserReorder="False" IsReadOnly="True"/>
+            <DataGridTextColumn x:Name="PrizeTaskIdColumn" Binding="{Binding MetaData.ID}" Header="ID" IsReadOnly="True"/>
+            <DataGridTextColumn x:Name="PrizeTaskCreatedColumn" Binding="{Binding MetaData.Created}" Header="Created" IsReadOnly="True"/>
+            <DataGridTextColumn x:Name="PrizeTaskLastModifiedColumn" Binding="{Binding MetaData.LastModified}" Header="Last Modified" IsReadOnly="True"/>
+            <DataGridTextColumn x:Name="PrizeTaskDescriptionColumn" Binding="{Binding RawDescription}" Header="Description" IsReadOnly="True"/>
           </DataGrid.Columns>
         </DataGrid>
       </TabItem>
@@ -90,11 +89,14 @@
         </DataGrid>
       </TabItem>
     </TabControl>
-    <StackPanel x:Name="CardButtonStackPanel" Margin="0,5,0,6" Grid.Row="3" Orientation="Horizontal" ScrollViewer.VerticalScrollBarVisibility="Disabled" FlowDirection="RightToLeft">
-      <Button x:Name="DeleteCardButton" Content="Delete" Width="60" Margin="3,0" Click="DeleteCardButton_Click"/>
-      <Button x:Name="CopyCardButton" Content="Copy" Width="60" Margin="3,0,3,0" Click="CopyCardButton_Click"/>
-      <Button x:Name="EditCardButton" Content="Edit" Width="60" Margin="3,0,3,0" Click="EditCardButton_Click"/>
-      <Button x:Name="AddCardButton" Content="Add" Width="60" Margin="3,0,3,0" Click="AddCardButton_Click"/>
-    </StackPanel>
+    <DockPanel x:Name="BottomDock" Margin="0,5,0,6" Grid.Row="3" >
+      <Label x:Name="StatusLabel" Content="" VerticalContentAlignment="Center" Padding="3,0,3,0" />
+      <StackPanel x:Name="CardButtonStackPanel"  Orientation="Horizontal" ScrollViewer.VerticalScrollBarVisibility="Disabled" FlowDirection="RightToLeft">
+        <Button x:Name="DeleteCardButton" Content="Delete" Width="60" Margin="3,0,3,0" Click="DeleteCardButton_Click"/>
+        <Button x:Name="CopyCardButton" Content="Copy" Width="60" Margin="3,0,3,0" Click="CopyCardButton_Click"/>
+        <Button x:Name="EditCardButton" Content="Edit" Width="60" Margin="3,0,3,0" Click="EditCardButton_Click"/>
+        <Button x:Name="AddCardButton" Content="Add" Width="60" Margin="3,0,0,0" Click="AddCardButton_Click"/>
+      </StackPanel>
+    </DockPanel>
   </Grid>
 </UserControl>

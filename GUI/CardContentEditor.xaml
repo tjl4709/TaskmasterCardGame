@@ -15,5 +15,7 @@
   <UserControl.Background>
     <SolidColorBrush Color="White"/>
   </UserControl.Background>
-  <WrapPanel x:Name="CardContentWrapPanel" Cursor="IBeam" MouseDown="Control_MouseDown"/>
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <WrapPanel x:Name="CardContentWrapPanel" Cursor="IBeam" MouseDown="Control_MouseDown"/>
+  </ScrollViewer>
 </UserControl>

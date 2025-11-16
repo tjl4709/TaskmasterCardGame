@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Controls;
 using System.ComponentModel;
+using Microsoft.Win32;
 using Backend;
 
 namespace GUI
@@ -34,10 +36,57 @@ namespace GUI
                 };
             }
         }
+        protected ICollectionView ActiveView => CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource);
 
         public CardDatabasePage()
         {
             InitializeComponent();
+        }
+
+        protected ICollectionView[] GetTableViews()
+        {
+            return new ICollectionView[] {
+                CollectionViewSource.GetDefaultView(PrizeTaskTable.ItemsSource),
+                CollectionViewSource.GetDefaultView(SecretTaskTable.ItemsSource),
+                CollectionViewSource.GetDefaultView(TaskTable.ItemsSource),
+                CollectionViewSource.GetDefaultView(RestrictionTable.ItemsSource),
+                CollectionViewSource.GetDefaultView(FinalTaskTable.ItemsSource)
+            };
+        }
+
+        private void ImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            // open file dialog for use to select file(s) to import from
+            var dialog = new OpenFileDialog() {
+                AddExtension = true,
+                CheckFileExists = true,
+                DefaultExt = "tsv",
+                Filter = "Tab Separated Value Files|*.tsv",
+                InitialDirectory = Path.GetDirectoryName(Database.FilePath),
+                Multiselect = true,
+                Title = "Select Text/TSV Database(s) to Import Cards From:",
+                ValidateNames = true
+            };
+            // import the files
+            if (dialog.ShowDialog() == true) {
+                Database.ImportTextDatabases(dialog.FileNames);
+            }
+            // refresh tables
+            var views = GetTableViews();
+            for (int i = 0; i < views.Length; ++i)
+                views[i].Refresh();
+        }
+
+        private void SearchCriteriaEdit_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var views = GetTableViews();
+            if (string.IsNullOrWhiteSpace(SearchCriteriaEdit.Text)) {
+                for (int i = 0; i < views.Length; ++i)
+                    views[i].Filter = null;
+            } else {
+                for (int i = 0; i < views.Length; ++i)
+                    views[i].Filter = (card) => ((ICard)card).Contains(SearchCriteriaEdit.Text);
+            }
         }
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)
@@ -45,7 +94,7 @@ namespace GUI
             SimpleCard newCard = CardModal.CreateNewCard((CardType)(TableTabControl.SelectedIndex + 1));
             if (newCard != null) {
                 Database.AddCard(newCard);
-                CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource).Refresh();
+                ActiveView.Refresh();
             }
         }
 
@@ -54,7 +103,7 @@ namespace GUI
             SimpleCard editedCard = CardModal.EditCard((SimpleCard)ActiveTable.SelectedItem);
             if (editedCard != null) {
                 Database.UpdateCard(editedCard);
-                CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource).Refresh();
+                ActiveView.Refresh();
             }
         }
 
@@ -77,7 +126,7 @@ namespace GUI
             copiedCard = CardModal.EditCard(copiedCard);
             if (copiedCard != null) {
                 Database.AddCard(copiedCard);
-                CollectionViewSource.GetDefaultView(ActiveTable.ItemsSource).Refresh();
+                ActiveView.Refresh();
             }
         }
 
@@ -93,7 +142,7 @@ namespace GUI
                 foreach (SimpleCard card in cardsToRemove) {
                     Database.RemoveCard(card);
                 }
-                CollectionViewSource.GetDefaultView(activeTable.ItemsSource).Refresh();
+                ActiveView.Refresh();
             }
         }
     }
