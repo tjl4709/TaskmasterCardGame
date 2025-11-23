@@ -118,8 +118,8 @@ namespace GUI
         };
         #endregion
 
-        public SqlDatabase(string filePath, ICardFormatter formatter)
-            : base(formatter)
+        public SqlDatabase(string filePath, ICardFormatter formatter = null)
+            : base(formatter ?? new GuiCardFormatter())
         {
             // initialize lists
             m_loadedPrizeTasks   = new List<SimpleCard>();
@@ -134,8 +134,12 @@ namespace GUI
             m_restrictions = new List<SimpleCard>();
             m_finalTasks   = new List<TaskCard>();
 
-            // open database (if it did not exist, a new one will be created)
+            // create parent directories in file path if needed
             FilePath = filePath;
+            DirectoryInfo parentDirectory = Directory.GetParent(filePath);
+            if (!parentDirectory.Exists) Directory.CreateDirectory(parentDirectory.FullName);
+
+            // open database (if it did not exist, a new one will be created)
             SQLitePCL.Batteries.Init();
             m_connection = new SqliteConnection($"Data Source={filePath}");
             m_connection.Open();

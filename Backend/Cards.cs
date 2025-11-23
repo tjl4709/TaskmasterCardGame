@@ -111,6 +111,20 @@ namespace Backend
             return m_rawData.SequenceEqual(card.m_rawData);
         }
 
+        public bool ContainsIgnoreCase(string searchFor)
+        {
+            bool found = false;
+            searchFor = searchFor.ToLower();
+
+            for (int i = 0; i < m_rawData.Length; ++i) {
+                if (m_rawData[i].ToLower().Contains(searchFor)) {
+                    found = true;
+                    break;
+                }
+            }
+            return found;
+        }
+
         public override int GetHashCode()
         {
             return MetaData == null ? m_rawData.GetHashCode() : MetaData.ID.GetHashCode();

@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Taskmaster Card Game" Height="450" Width="800">
   <TabControl x:Name="MainTabControl" SelectedIndex="1">
-    <TabItem x:Name="MainMenu" Header="MainMenu">
+    <TabItem x:Name="MainMenu" Header="MainMenu" Visibility="Collapsed">
       <Grid x:Name="MainMenuGrid" Margin="0">
         <Grid.RowDefinitions>
           <RowDefinition/>
@@ -19,20 +19,15 @@
           <RowDefinition Height="0.7*"/>
         </Grid.RowDefinitions>
         <Button x:Name="BuildGameButton" Content="Build a Game" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Width="151" FontSize="18" Grid.Row="3" Click="BuildGameButton_Click"/>
-        <Button x:Name="EditCardsButton" Content="Create/Edit Cards" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Width="151" FontSize="18" Grid.Row="4" Click="EditCardsButton_Click"/>
+        <Button x:Name="EditCardsButton" Content="Manage Cards" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Width="151" FontSize="18" Grid.Row="4" Click="EditCardsButton_Click"/>
         <Button x:Name="ExitButton" Content="Exit" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Width="151" FontSize="18" Grid.Row="5" Click="ExitButton_Click"/>
         <Label x:Name="GameTitle" Content="Taskmaster Card Game" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" FontSize="48" Grid.Row="1"/>
-        <Button x:Name="SettingsButton" Content="" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="20" Height="20" BorderBrush="{x:Null}">
-          <Button.Background>
-            <ImageBrush ImageSource="gray-vector-gear-settings-options-icon.png" Stretch="Uniform"/>
-          </Button.Background>
-        </Button>
       </Grid>
     </TabItem>
-    <TabItem x:Name="CardManagementPage" Header="CardManagement">
+    <TabItem x:Name="CardManagementPage" Header="CardManagement" Visibility="Collapsed">
       <local:CardDatabasePage x:Name="CardManager"/>
     </TabItem>
-    <TabItem x:Name="DatabaseManagementPage" Content="" Header="DatabaseManagement"/>
-    <TabItem x:Name="GameSettingsPage" Content="" Header="GameSettingsPage"/>
+    <TabItem x:Name="DatabaseManagementPage" Content="" Header="DatabaseManagement" Visibility="Collapsed"/>
+    <TabItem x:Name="GameSettingsPage" Content="" Header="GameSettingsPage" Visibility="Collapsed"/>
   </TabControl>
 </Window>

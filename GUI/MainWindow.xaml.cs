@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.IO;
 using Backend;
 
 namespace GUI
@@ -17,15 +18,22 @@ namespace GUI
 
         public MainWindow()
         {
+            // upon first execution of the program, this will default to a subfoler of %APPDATA%, so we need to expand the envorinmant variable
+            Properties.Settings.Default.DatabaseFilePath = Environment.ExpandEnvironmentVariables(Properties.Settings.Default.DatabaseFilePath);
+
             InitializeComponent();
-            m_database = new SqlDatabase(@"C:\Users\7budd\source\repos\TaskmasterCardGame\CardData\test_card_db.sqlite3", new GuiCardFormatter());
+            MainTabControl.SelectedIndex = 0;  // make sure to start on the main menu
+
+            // setup card database and manager
+            m_database = new SqlDatabase(Properties.Settings.Default.DatabaseFilePath);
+            CardManager.BackButtonClick += BackButton_Click;
             CardManager.Database = m_database;
             CardManager.OnDatabaseChanged();
         }
 
         private void BuildGameButton_Click(object sender, RoutedEventArgs e)
         {
-            MainTabControl.SelectedIndex = 3;  // board settings page
+            MainTabControl.SelectedIndex = 3;  // game settings page
         }
 
         private void EditCardsButton_Click(object sender, RoutedEventArgs e)

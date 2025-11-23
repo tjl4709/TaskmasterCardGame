@@ -14,9 +14,23 @@ namespace GUI
     /// </summary>
     public partial class CardDatabasePage : UserControl, INotifyPropertyChanged
     {
-        public SqlDatabase Database { get; set; }
+        protected SqlDatabase mDatabase;
+        public SqlDatabase Database {
+            get => mDatabase;
+            set {
+                mDatabase = value;
+                Properties.Settings.Default.DatabaseFilePath =
+                    SelectedDatabasePath.Text = value.FilePath;
+                Properties.Settings.Default.Save();
+            }
+        }
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnDatabaseChanged() { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Database")); }
+
+        public event RoutedEventHandler BackButtonClick {
+            add { BackButton.Click += value; }
+            remove { BackButton.Click -= value; }
+        }
 
         protected DataGrid ActiveTable {
             get {
@@ -41,6 +55,8 @@ namespace GUI
         public CardDatabasePage()
         {
             InitializeComponent();
+
+            
         }
 
         protected ICollectionView[] GetTableViews()
@@ -53,47 +69,80 @@ namespace GUI
                 CollectionViewSource.GetDefaultView(FinalTaskTable.ItemsSource)
             };
         }
+        
+        // Event Handlers
+
+        private void DatabaseSelectButton_Click(object sender, RoutedEventArgs e)
+        {
+            // open file dialog to select database to manage
+            var dialog = new OpenFileDialog() {
+                AddExtension = true,
+                CheckFileExists = false,
+                DefaultExt = "tsv",
+                Filter = "SQLite Databases|*.sqlite3",
+                InitialDirectory = Path.GetDirectoryName(mDatabase.FilePath),
+                Multiselect = false,
+                Title = "Select Text/TSV Database(s) to Import Cards From:",
+                ValidateNames = true
+            };
+            
+            // load the selected database
+            if (dialog.ShowDialog() == true) {
+                // using the public property will also update the displayed and persistent file paths
+                Database = new SqlDatabase(dialog.FileName);
+                OnDatabaseChanged();
+                // refresh tables
+                var views = GetTableViews();
+                for (int i = 0; i < views.Length; ++i)
+                    views[i].Refresh();
+            }
+        }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
-            // open file dialog for use to select file(s) to import from
+            // open file dialog to select file(s) to import from
             var dialog = new OpenFileDialog() {
                 AddExtension = true,
                 CheckFileExists = true,
                 DefaultExt = "tsv",
                 Filter = "Tab Separated Value Files|*.tsv",
-                InitialDirectory = Path.GetDirectoryName(Database.FilePath),
+                InitialDirectory = Path.GetDirectoryName(mDatabase.FilePath),
                 Multiselect = true,
                 Title = "Select Text/TSV Database(s) to Import Cards From:",
                 ValidateNames = true
             };
-            // import the files
+
             if (dialog.ShowDialog() == true) {
-                Database.ImportTextDatabases(dialog.FileNames);
+                // import the files
+                mDatabase.ImportTextDatabases(dialog.FileNames);
+                // refresh tables
+                var views = GetTableViews();
+                for (int i = 0; i < views.Length; ++i)
+                    views[i].Refresh();
             }
-            // refresh tables
-            var views = GetTableViews();
-            for (int i = 0; i < views.Length; ++i)
-                views[i].Refresh();
         }
 
         private void SearchCriteriaEdit_TextChanged(object sender, TextChangedEventArgs e)
         {
             var views = GetTableViews();
+            StatusLabel.Content = "Searching...";
             if (string.IsNullOrWhiteSpace(SearchCriteriaEdit.Text)) {
                 for (int i = 0; i < views.Length; ++i)
                     views[i].Filter = null;
             } else {
                 for (int i = 0; i < views.Length; ++i)
-                    views[i].Filter = (card) => ((ICard)card).Contains(SearchCriteriaEdit.Text);
+                    views[i].Filter = (card) => ((ICard)card).ContainsIgnoreCase(SearchCriteriaEdit.Text);
             }
+            StatusLabel.Content = "";
         }
+
+        // Card CRUD Methods
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)
         {
             SimpleCard newCard = CardModal.CreateNewCard((CardType)(TableTabControl.SelectedIndex + 1));
             if (newCard != null) {
-                Database.AddCard(newCard);
+                mDatabase.AddCard(newCard);
                 ActiveView.Refresh();
             }
         }
@@ -102,7 +151,7 @@ namespace GUI
         {
             SimpleCard editedCard = CardModal.EditCard((SimpleCard)ActiveTable.SelectedItem);
             if (editedCard != null) {
-                Database.UpdateCard(editedCard);
+                mDatabase.UpdateCard(editedCard);
                 ActiveView.Refresh();
             }
         }
@@ -125,7 +174,7 @@ namespace GUI
             copiedCard.MetaData.ID = 0;
             copiedCard = CardModal.EditCard(copiedCard);
             if (copiedCard != null) {
-                Database.AddCard(copiedCard);
+                mDatabase.AddCard(copiedCard);
                 ActiveView.Refresh();
             }
         }
@@ -140,7 +189,7 @@ namespace GUI
                 ) == MessageBoxResult.OK)
             {
                 foreach (SimpleCard card in cardsToRemove) {
-                    Database.RemoveCard(card);
+                    mDatabase.RemoveCard(card);
                 }
                 ActiveView.Refresh();
             }
